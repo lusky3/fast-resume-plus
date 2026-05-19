@@ -1,0 +1,20 @@
+name: Notify
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  discord:
+    name: Discord release notification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post release to Discord
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          status: success
+          title: ${{ github.event.release.tag_name }} released
+          description: ${{ github.event.release.html_url }}
+          color: 0x57F287
+          username: fast-resume-plus
