@@ -13,7 +13,7 @@
       "@semantic-release/exec",
       {
         "prepareCmd": "sed -i 's/^version = .*/version = \"${nextRelease.version}\"/' pyproject.toml && uv lock",
-        "publishCmd": "uv build && ([ -z \"$UV_PUBLISH_TOKEN\" ] && echo 'UV_PUBLISH_TOKEN not set — skipping PyPI publish' || uv publish)"
+        "publishCmd": "uv build && uv publish"
       }
     ],
     [

@@ -99,9 +99,8 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Set UV_PUBLISH_TOKEN in repo secrets to enable PyPI publishing.
-          # Leave unset to skip (GitHub Release + binaries still work without it).
-          UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
+          # uv publish uses the OIDC token automatically when id-token: write
+          # is set — no UV_PUBLISH_TOKEN needed with Trusted Publishing.
         run: npx semantic-release
       - name: Check if a new release was created
         id: check
