@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Run Snyk
-        uses: snyk/actions/python@9cf6ca713d71123d2d229cc3d7f145b96ea3c518 # master
+        uses: snyk/actions/python@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
