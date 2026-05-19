@@ -36,7 +36,7 @@ Coding agents do have a resume feature, but either they don't support searching,
 | Claude Code    | `~/.claude/projects/<project>/*.jsonl`                             | `claude --resume <id>`                          | `--dangerously-skip-permissions`                        | No               |
 | Codex CLI      | `~/.codex/sessions/**/*.jsonl`                                     | `codex resume <id>`                             | `--dangerously-bypass-approvals-and-sandbox`            | Yes              |
 | Copilot CLI    | `~/.copilot/session-state/**/*.jsonl`                              | `copilot --resume <id>`                         | `--allow-all-tools --allow-all-paths`                   | No               |
-| Copilot VSCode | `<VS Code storage>/workspaceStorage/*/chatSessions/*.json`         | `code <directory>`                              | _(n/a)_                                                 | No               |
+| Copilot VS Code | `<VS Code storage>/workspaceStorage/*/chatSessions/*.json`        | `code <directory>`                              | _(n/a)_                                                 | No               |
 | Gemini CLI     | `~/.gemini/tmp/<slug>/chats/session-*.json[l]`                     | `gemini --resume <id>`                          | `--yolo`                                                | No               |
 | Kiro CLI       | `~/.kiro/sessions/cli/<uuid>.json` + `<uuid>.jsonl`                | `kiro-cli chat --resume-id <id>`                | `--trust-all-tools`                                     | No               |
 | OpenCode       | `~/.local/share/opencode/opencode.db` (or legacy split JSON)       | `opencode <dir> --session <id>`                 | _(not supported)_                                       | No               |
@@ -99,7 +99,7 @@ fr -a claude -d backend "api error"
 
 Type these directly in the search box:
 
-```
+```text
 agent:claude               Filter by agent
 agent:claude,codex         Multiple agents (OR)
 -agent:vibe                Exclude agent
@@ -119,7 +119,7 @@ date:month                 Within the last 30 days
 
 Mix keyword filters with free text:
 
-```
+```text
 agent:claude date:<1d api bug
 dir:backend -agent:vibe auth
 ```
@@ -250,7 +250,7 @@ Top Directories
 
 ### Architecture
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────────┐
 │                              SessionSearch                                 │
 │  • Dispatches adapters in parallel (ThreadPoolExecutor)                    │
@@ -390,7 +390,7 @@ Pre-commit hooks run `ruff` (with `--fix`), `ruff-format`, `ty check src/`, and 
 
 ### Project structure
 
-```
+```text
 fast-resume-plus/
 ├── src/fast_resume/
 │   ├── cli.py              # Click CLI entry point
