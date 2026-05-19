@@ -300,7 +300,9 @@ class TestEndToEndDataFlow:
         """Resume generates correct command from real session data."""
         # Patch shutil.which so PATH validation passes on CI where agent
         # CLIs are not installed.
-        with patch("fast_resume.tui.app.shutil.which", return_value="/usr/local/bin/mock"):
+        with patch(
+            "fast_resume.tui.app.shutil.which", return_value="/usr/local/bin/mock"
+        ):
             async with integration_app.run_test(size=(120, 40)) as pilot:
                 await pilot.pause()
 
