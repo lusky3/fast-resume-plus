@@ -407,7 +407,8 @@ fast-resume-plus/
 │   │   ├── query.py        # Autocomplete / keyword highlighting
 │   │   ├── results_table.py
 │   │   ├── search_input.py
-│   │   └── styles.py
+│   │   ├── styles.py
+│   │   └── utils.py        # Clipboard helper
 │   └── adapters/
 │       ├── base.py         # Session dataclass, AgentAdapter protocol, BaseSessionAdapter ABC
 │       ├── claude.py
