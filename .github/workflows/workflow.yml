@@ -71,6 +71,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [commitlint, test, lint, typecheck]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # The "pypi" environment is required so the OIDC token is scoped to this
+    # environment — PyPI Trusted Publishing is configured to match it.
+    environment: pypi
     concurrency:
       group: release
       cancel-in-progress: false
