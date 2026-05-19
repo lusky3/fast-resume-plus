@@ -9,6 +9,7 @@ from collections.abc import Callable
 
 from textual import on, work
 from textual.app import App, ComposeResult
+from textual.notifications import Notification
 from textual.css.query import NoMatches
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
@@ -691,7 +692,7 @@ class FastResumeApp(App):
     # Rendering / repaint hooks
     # -------------------------------------------------------------------------
 
-    def _unnotify(self, notification: object, refresh: bool = True) -> None:
+    def _unnotify(self, notification: Notification, refresh: bool = True) -> None:
         """Override to force a full screen repaint when a toast is dismissed.
 
         The toast widget is removed from the DOM but the terminal cells it
@@ -699,7 +700,7 @@ class FastResumeApp(App):
         (depends on the backend/protocol). Scheduling a repaint here ensures
         no ghost rows are left on screen.
         """
-        super()._unnotify(notification, refresh)  # type: ignore[arg-type]
+        super()._unnotify(notification, refresh)
         # Schedule the repaint so it runs after the widget removal is processed
         self.call_later(self.screen.refresh, repaint=True)
 
