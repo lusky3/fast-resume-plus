@@ -1,5 +1,6 @@
 """Configuration and constants for fast-resume."""
 
+import os
 from pathlib import Path
 
 # Agent colors and badges (badge is the display name shown in UI)
@@ -32,3 +33,12 @@ CACHE_DIR = Path.home() / ".cache" / "fast-resume"
 INDEX_DIR = CACHE_DIR / "tantivy_index"
 LOG_FILE = CACHE_DIR / "parse-errors.log"
 SCHEMA_VERSION = 21  # Bump when schema changes (21: add gemini + kiro adapters)
+
+# Per-agent binary overrides read from environment variables.
+# Set FAST_RESUME_<AGENT>_BIN to an absolute path to use a binary that isn't on PATH.
+# Hyphens in agent names become underscores: FAST_RESUME_COPILOT_CLI_BIN, etc.
+BIN_OVERRIDES: dict[str, str] = {
+    agent: path
+    for agent in AGENTS
+    if (path := os.environ.get(f"FAST_RESUME_{agent.upper().replace('-', '_')}_BIN"))
+}

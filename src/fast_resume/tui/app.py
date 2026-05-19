@@ -19,7 +19,7 @@ from textual.widgets import Footer, Input, Label
 
 from .. import __version__
 from ..adapters.base import ParseError, Session
-from ..config import LOG_FILE
+from ..config import BIN_OVERRIDES, LOG_FILE
 from ..search import SessionSearch
 from .filter_bar import FILTER_KEYS, FilterBar
 from .modal import YoloModeModal
@@ -547,19 +547,24 @@ class FastResumeApp(App):
         resume_cmd = self.search_engine.get_resume_command(
             self.selected_session, yolo=yolo
         )
-        # Validate the binary is on PATH before exiting the TUI. Without
-        # this, a missing CLI binary would surface as a raw `FileNotFoundError`
-        # traceback once `os.execvp` runs in `cli.py` — by then the TUI is
-        # already gone and the user has no recourse.
-        if resume_cmd and shutil.which(resume_cmd[0]) is None:
+        if resume_cmd:
             agent_name = self.selected_session.agent
-            self.notify(
-                f"Couldn't find '{resume_cmd[0]}' on your PATH. "
-                f"Is the {agent_name} CLI installed?",
-                severity="error",
-                timeout=8,
-            )
-            return
+            if agent_name in BIN_OVERRIDES:
+                resume_cmd = [BIN_OVERRIDES[agent_name]] + resume_cmd[1:]
+            bin_path = resume_cmd[0]
+            # Accept an absolute path that is directly executable, or fall back
+            # to PATH resolution. Without this check a missing binary surfaces
+            # as a raw FileNotFoundError after execvp when the TUI is already gone.
+            bin_found = os.path.isabs(bin_path) and os.access(bin_path, os.X_OK)
+            if not bin_found and shutil.which(bin_path) is None:
+                self.notify(
+                    f"Couldn't find '{bin_path}' on your PATH. "
+                    f"Is the {agent_name} CLI installed? "
+                    f"Set FAST_RESUME_{agent_name.upper().replace('-', '_')}_BIN to override.",
+                    severity="error",
+                    timeout=8,
+                )
+                return
         self._resume_command = resume_cmd
         self._resume_directory = self.selected_session.directory
         self.exit()
