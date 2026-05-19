@@ -30,7 +30,7 @@ Commit messages follow Conventional Commits (`feat`, `fix`, `chore`, etc.); `com
 The README has a thorough architecture section with diagrams; below are the non-obvious points worth knowing before editing.
 
 **Adapter contract** — `src/fast_resume/adapters/base.py` defines two layers:
-- `AgentAdapter` (Protocol): the public interface every adapter must satisfy (`find_sessions`, `find_sessions_incremental`, `get_resume_command`, `is_available`, `get_raw_stats`, `supports_yolo`).
+- `AgentAdapter` (Protocol): the public interface every adapter implements (`find_sessions`, `find_sessions_incremental`, `get_resume_command`, `is_available`, `get_raw_stats`, `supports_yolo`).
 - `BaseSessionAdapter` (ABC): template-method base for file-based adapters. Subclasses implement `_scan_session_files()` (returns `{session_id: (Path, mtime)}`) and `_parse_session_file()`; the base handles incremental scanning, mtime comparison, and deleted-ID detection.
 
 Which adapters use which base:
@@ -60,7 +60,7 @@ Which adapters use which base:
 
 Crush resume is blocked in the TUI (`action_resume_session` checks `session.agent == "crush"` and shows an error toast) because Crush has no CLI resume flag.
 
-**Yolo auto-detect** — Codex sniffs `turn_context` events for `approval_policy == "never"` or `sandbox_policy.mode == "danger-full-access"`. Vibe reads `config.auto_approve` (or legacy `auto_approve`) from `meta.json`. Both set `Session.yolo = True` at parse time. Claude, Copilot CLI, Gemini, and Kiro cannot detect yolo from file content, so the TUI shows a modal when the user presses Enter on those sessions.
+**Yolo auto-detect** — Codex sniffs `turn_context` events for `approval_policy == "never"` or `sandbox_policy.mode == "danger-full-access"`. Vibe reads `config.auto_approve` (or legacy `auto_approve`) from `meta.json`. Both set `Session.yolo = True` at parse time. Claude, Copilot CLI, Gemini, and Kiro have no yolo signal in their session files, so the TUI shows a modal when the user presses Enter on those sessions.
 
 **Incremental indexing** — `SessionSearch` (in `search.py`) loads `(session_id → (mtime, agent))` pairs from Tantivy, dispatches all adapters concurrently in a `ThreadPoolExecutor`, and streams sessions into the index via the `on_session` callback. `flush_pending()` snapshots the buffer under one lock, then commits under a separate `writer_lock` so adapter threads keep appending while Tantivy flushes. Adapters re-parse only files whose mtime exceeds the stored value by `MTIME_TOLERANCE` (1 ms).
 
