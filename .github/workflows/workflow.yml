@@ -123,7 +123,7 @@ jobs:
         run: npm install -D semantic-release @semantic-release/changelog @semantic-release/git @semantic-release/exec
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           # uv publish uses the OIDC token automatically when id-token: write
           # is set — no UV_PUBLISH_TOKEN needed with Trusted Publishing.
         run: npx semantic-release
