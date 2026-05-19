@@ -328,6 +328,9 @@ class TestEndToEndDataFlow:
                 cmd = integration_app.get_resume_command()
                 assert cmd is not None
                 assert len(cmd) > 0
+                # Verify the command is built from the correct session's agent.
+                # (Uses Claude/Vibe fixtures so cmd[0] will be "claude" or "vibe".)
+                assert cmd[0] == first_session.agent
 
     @pytest.mark.asyncio
     async def test_session_metadata_displayed_correctly(self, integration_app):

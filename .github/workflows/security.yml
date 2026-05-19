@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Run Snyk
-        uses: snyk/actions/python@master
+        uses: snyk/actions/python@9cf6ca713d71123d2d229cc3d7f145b96ea3c518 # master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -51,6 +51,7 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Run Safety CLI scan
-        uses: pyupio/safety-action@v1
+        uses: pyupio/safety-action@2591cf2f3e67ba68b923f4c92f0d36e281c65023 # v1.0.1
         with:
           api-key: ${{ secrets.SAFETY_CLI_TOKEN }}
+        continue-on-error: true

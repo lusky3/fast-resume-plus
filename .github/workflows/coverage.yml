@@ -28,7 +28,7 @@ jobs:
           fail_ci_if_error: false
 
       - name: Upload to QLTY
-        uses: qltysh/qlty-action/coverage@main
+        uses: qltysh/qlty-action/coverage@141b881236146435192435eb7b0e06ea0b70b4d9 # main
         with:
           token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
           files: coverage.xml
