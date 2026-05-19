@@ -13,7 +13,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Greptile review
-        uses: greptile-systems/greptile-review@v1
+        uses: greptile-systems/greptile-action@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           greptile-token: ${{ secrets.GREPTILE_TOKEN }}
