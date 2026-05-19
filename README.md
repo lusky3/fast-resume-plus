@@ -2,72 +2,91 @@
   <img src="assets/logo.png" alt="fast-resume" width="120" height="120">
 </p>
 
-# fast-resume
+# fast-resume-plus
 
-[![PyPI version](https://img.shields.io/pypi/v/fast-resume)](https://pypi.org/project/fast-resume/)
-[![PyPI downloads](https://img.shields.io/pypi/dm/fast-resume)](https://pypi.org/project/fast-resume/)
+[![PyPI version](https://img.shields.io/pypi/v/fast-resume-plus)](https://pypi.org/project/fast-resume-plus/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/fast-resume-plus)](https://pypi.org/project/fast-resume-plus/)
 
-Search and resume conversations across Claude Code, Codex, and more, all from a single place.
+Search and resume conversations across Claude Code, Codex, Copilot, Gemini, Kiro, OpenCode, Vibe, and Crush — all from one place.
 
-## Why fast-resume?
-
-Coding agents are really good right now, so I'm using a bunch of them. Sometimes I remember I, or the LLM, mentioned something specific in a previous session, and I want to go back to it.
-
-The problem is that currently, agents do have a resume feature, but either they don't support searching, or the search is very basic (e.g., title only).
-
-That's why I built `fast-resume`: a command-line tool that aggregates all your coding agent sessions into a single searchable index, so you can quickly find and resume any session.
+`fast-resume-plus` is a fork of [angristan/fast-resume](https://github.com/angristan/fast-resume) that adds Gemini CLI and Kiro adapters, improves the launch modal, and renames the package to `fast-resume-plus`.
 
 ![demo](https://github.com/user-attachments/assets/5ea9c2a5-a7c0-41bf-9357-394aeaaa0a06)
 
+## Why fast-resume-plus?
+
+Coding agents do have a resume feature, but either they don't support searching, or search is limited to titles. `fast-resume-plus` indexes the full conversation text across every agent you use, so you can search by what was actually discussed, then press Enter to resume directly.
+
 ## Features
 
-- **Unified Search**: One search box to find sessions across all your coding agents
-- **Full-Text Search**: Search not just titles, but the entire conversation content (user messages and assistant responses)
-- **Very fast**: Built on the Rust-powered Tantivy search engine for blazing-fast indexing and searching
-- **Fuzzy Matching**: Typo-tolerant search with smart ranking (exact matches boosted)
-- **Direct Resume**: Select, Enter, you're back in your session
-- **Beautiful TUI**: fzf-style interface with agent icons, color-coded results, and live preview
-- **Update Notifications**: Get notified when a new version is available
-- **Multi-Agent Support**: Works with Claude Code, Codex, Copilot, OpenCode, Vibe, Crush, and more
+- **Unified search**: One search box for sessions across all supported agents
+- **Full-text search**: Searches user messages and assistant responses, not just titles
+- **Tantivy-powered**: Search engine written in Rust, accessed via Python bindings. Fuzzy queries over thousands of sessions return in under 10 ms
+- **Fuzzy matching**: Edit distance 1 typo tolerance with exact hits ranked higher
+- **Direct resume**: Select a session, press Enter — `fr` `os.execvp`s the agent's CLI and exits
+- **Incremental indexing**: Only re-parses files whose mtime changed; warm start is ~50 ms
+- **TUI with preview pane**: Agent-colored results table, live preview of conversation content
+- **Keyword filter DSL**: `agent:`, `dir:`, `date:` filters in the search box
+- **Update notifications**: Checks PyPI for new releases on startup (disable with `--no-version-check`)
+
+## Supported Agents
+
+| Agent          | Session Location                                                   | Resume Command                                  | Yolo flag                                               | Auto-detect yolo |
+| -------------- | ------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------- | ---------------- |
+| Claude Code    | `~/.claude/projects/<project>/*.jsonl`                             | `claude --resume <id>`                          | `--dangerously-skip-permissions`                        | No               |
+| Codex CLI      | `~/.codex/sessions/**/*.jsonl`                                     | `codex resume <id>`                             | `--dangerously-bypass-approvals-and-sandbox`            | Yes              |
+| Copilot CLI    | `~/.copilot/session-state/**/*.jsonl`                              | `copilot --resume <id>`                         | `--allow-all-tools --allow-all-paths`                   | No               |
+| Copilot VS Code | `<VS Code storage>/workspaceStorage/*/chatSessions/*.json`        | `code <directory>`                              | _(n/a)_                                                 | No               |
+| Gemini CLI     | `~/.gemini/tmp/<slug>/chats/session-*.json[l]`                     | `gemini --resume <id>`                          | `--yolo`                                                | No               |
+| Kiro CLI       | `~/.kiro/sessions/cli/<uuid>.json` + `<uuid>.jsonl`                | `kiro-cli chat --resume-id <id>`                | `--trust-all-tools`                                     | No               |
+| OpenCode       | `~/.local/share/opencode/opencode.db` (or legacy split JSON)       | `opencode <dir> --session <id>`                 | _(not supported)_                                       | No               |
+| Vibe           | `~/.vibe/logs/session/session_*/`                                  | `vibe --resume <id>`                            | `--agent auto-approve`                                  | Yes              |
+| Crush          | SQLite `crush.db` per project (paths from `~/.local/share/crush/`) | `crush` (opens picker in session directory)     | _(not supported)_                                       | No               |
+
+**Yolo auto-detection**: Codex and Vibe store the permissions mode in their session files. Sessions originally started in yolo mode are automatically resumed in yolo mode.
+
+**Launch modal**: For agents that support yolo but don't auto-detect it (Claude, Copilot CLI, Gemini, Kiro), pressing Enter shows a modal with a yolo checkbox. Press `Space`/`y`/`n` to toggle, then Enter to launch, or Esc to cancel. Pass `--yolo` to always skip the prompt.
 
 ## Installation
 
-### Recommended Terminal
+### Recommended terminal
 
-For the best experience, [Ghostty 👻](https://ghostty.org/) is recommended. Other terminals may have issues with interactive features and displaying images.
-
-### Homebrew
-
-```bash
-brew tap angristan/tap
-brew install fast-resume
-```
+[Ghostty](https://ghostty.org/) is recommended. Other terminals may have issues displaying images in the preview pane.
 
 ### uv (PyPI)
 
 ```bash
-# Run directly (no install needed)
+# Run directly without installing
 uvx --from fast-resume-plus fr
 
-# Or install permanently
+# Install permanently
 uv tool install fast-resume-plus
 fr
 ```
+
+### pip
+
+```bash
+pip install fast-resume-plus
+fr
+```
+
+Requires Python 3.14 or later.
 
 ## Usage
 
 ### Interactive TUI
 
 ```bash
-# Open the TUI with all sessions
+# Open with all sessions
 fr
 
-# Pre-filter search query
+# Pre-fill the search query
 fr "authentication bug"
 
 # Filter by agent
 fr -a claude
-fr -a codex
+fr -a gemini
 
 # Filter by directory
 fr -d myproject
@@ -76,74 +95,57 @@ fr -d myproject
 fr -a claude -d backend "api error"
 ```
 
-### Keyword Search Syntax
+### Keyword search syntax
 
-Filter directly in the search box using keywords:
+Type these directly in the search box:
 
-```bash
-agent:claude             # Filter by agent
-agent:claude,codex       # Multiple agents (OR)
--agent:vibe              # Exclude agent
-agent:claude,!codex      # Include claude, exclude codex
+```text
+agent:claude               Filter by agent
+agent:claude,codex         Multiple agents (OR)
+-agent:vibe                Exclude agent
+agent:claude,!codex        Include claude, exclude codex
 
-dir:myproject            # Filter by directory (substring)
-dir:backend,!test        # Include backend, exclude test
+dir:myproject              Filter by directory (substring match)
+dir:backend,!test          Include backend, exclude test
 
-date:today               # Sessions from today
-date:yesterday           # Sessions from yesterday
-date:<1h                 # Within the last hour
-date:<2d                 # Within the last 2 days
-date:>1w                 # Older than 1 week
-date:week                # Within the last week
-date:month               # Within the last month
+date:today                 Sessions from today
+date:yesterday             Sessions from yesterday
+date:<1h                   Within the last hour
+date:<2d                   Within the last 2 days
+date:>1w                   Older than 1 week
+date:week                  Within the last 7 days
+date:month                 Within the last 30 days
 ```
 
-Combine keywords with free-text search:
+Mix keyword filters with free text:
 
-```bash
-fr "agent:claude date:<1d api bug"
-fr "dir:backend -agent:vibe auth"
+```text
+agent:claude date:<1d api bug
+dir:backend -agent:vibe auth
 ```
 
-**Autocomplete**: Type `agent:cl` and press `Tab` to complete to `agent:claude`.
+Type `agent:cl` and press `Tab` to autocomplete to `agent:claude`.
 
-### Non-Interactive Mode
+### Non-interactive modes
 
 ```bash
-# List sessions in terminal (no TUI)
+# List sessions in terminal without opening the TUI
 fr --no-tui
 
-# Just list, don't offer to resume
+# List sessions without offering to resume
 fr --list
 
-# Force rebuild the index
+# Force rebuild the index from scratch
 fr --rebuild
 
-# View your usage statistics
+# Show usage statistics
 fr --stats
+
+# Disable the version check on startup
+fr --no-version-check
 ```
 
-### Yolo Mode
-
-Resume sessions with auto-approve / skip-permissions flags:
-
-| Agent           | Flag Added                                   | Auto-detected |
-| --------------- | -------------------------------------------- | ------------- |
-| Claude          | `--dangerously-skip-permissions`             | No            |
-| Codex           | `--dangerously-bypass-approvals-and-sandbox` | Yes           |
-| Copilot CLI     | `--allow-all-tools --allow-all-paths`        | No            |
-| Vibe            | `--auto-approve`                             | Yes           |
-| OpenCode        | _(config-based)_                             | —             |
-| Crush           | _(no CLI resume)_                            | —             |
-| VS Code Copilot | _(n/a)_                                      | —             |
-
-**Auto-detection:** Codex and Vibe store the permissions mode in their session files. Sessions originally started in yolo mode are automatically resumed in yolo mode.
-
-**Interactive prompt:** For agents that support yolo but don't store it (Claude, Copilot CLI), you'll see a Launch modal with a yolo checkbox. Press `Space`/`y`/`n` to toggle, then Enter to launch (or Esc to cancel).
-
-**Force yolo:** Use `fr --yolo` to skip the prompt and always resume in yolo mode, if supported.
-
-### Command Reference
+### Full command reference
 
 ```
 Usage: fr [OPTIONS] [QUERY]
@@ -152,17 +154,20 @@ Arguments:
   QUERY                    Search query (optional)
 
 Options:
-  -a, --agent [claude|codex|copilot-cli|copilot-vscode|crush|opencode|vibe]
-                          Filter by agent
-  -d, --directory TEXT    Filter by directory (substring match)
-  --no-tui                Output list to stdout instead of TUI
-  --list                  Just list sessions, don't resume
-  --rebuild               Force rebuild the session index
-  --stats                 Show index statistics
-  --yolo                  Resume with auto-approve/skip-permissions flags
-  --version               Show version
-  --help                  Show this message and exit
+  -a, --agent [claude|codex|copilot-cli|copilot-vscode|crush|gemini|kiro|opencode|vibe]
+                           Filter by agent
+  -d, --directory TEXT     Filter by directory (substring match)
+  --no-tui                 Output list to stdout instead of TUI
+  --list                   Just list sessions, don't resume
+  --rebuild                Force rebuild the session index
+  --stats                  Show index statistics
+  --yolo                   Resume with auto-approve/skip-permissions flags
+  --no-version-check       Disable checking for new versions
+  --version                Show version
+  --help                   Show this message and exit
 ```
+
+The CLI is also available as `fast-resume` and `fast-resume-plus`.
 
 ## Keybindings
 
@@ -176,29 +181,29 @@ Options:
 | `Enter`                 | Resume selected session            |
 | `/`                     | Focus search input                 |
 
-### Preview & Actions
+### Preview and actions
 
-| Key       | Action                                |
-| --------- | ------------------------------------- |
-| `Ctrl+\`` | Toggle preview pane                   |
-| `+` / `-` | Resize preview pane                   |
-| `Tab`     | Accept autocomplete suggestion        |
-| `c`       | Copy full resume command to clipboard |
-| `Ctrl+P`  | Open command palette                  |
-| `q`/`Esc` | Quit                                  |
+| Key          | Action                                |
+| ------------ | ------------------------------------- |
+| `Ctrl+\``    | Toggle preview pane                   |
+| `+` / `-`    | Resize preview pane                   |
+| `Tab`        | Accept autocomplete suggestion        |
+| `c`          | Copy full resume command to clipboard |
+| `Ctrl+P`     | Open command palette                  |
+| `q` / `Esc`  | Quit                                  |
 
-### Launch Modal
+### Launch modal
 
-| Key             | Action                                  |
-| --------------- | --------------------------------------- |
-| `Tab` / `←` `→` | Move focus between Cancel and Launch    |
-| `Space`         | Toggle yolo checkbox                    |
-| `y`             | Turn yolo on                            |
-| `n`             | Turn yolo off                           |
-| `Enter`         | Launch (with the checkbox's yolo state) |
-| `Esc`           | Cancel (stay in the TUI)                |
+| Key              | Action                                   |
+| ---------------- | ---------------------------------------- |
+| `Tab` / `←` `→`  | Move focus between Cancel and Launch     |
+| `Space`          | Toggle yolo checkbox                     |
+| `y`              | Turn yolo on                             |
+| `n`              | Turn yolo off                            |
+| `Enter`          | Launch (with the checkbox's yolo state)  |
+| `Esc`            | Cancel (stay in the TUI)                 |
 
-## Statistics Dashboard
+## Statistics dashboard
 
 Run `fr --stats` to see analytics about your coding sessions:
 
@@ -229,17 +234,7 @@ Data by Agent
 Activity by Day
 
  Mon   ██████████              89
- Tue   ██████████              86
- Wed   █████                   44
- Thu   ██████████████         115
- Fri   █████████████          112
- Sat   ████████████████████   163
- Sun   █████████████████      142
-
-Activity by Hour
-
-  0h ▄▁        ▄▄▅▂▂▂▂▂▃▃▃▅▅█ 23h
-  Peak hours: 23:00 (99), 22:00 (63), 12:00 (63)
+ ...
 
 Top Directories
 
@@ -247,139 +242,90 @@ Top Directories
 │ Directory             │ Sessions │ Messages │
 ├───────────────────────┼──────────┼──────────┤
 │ ~/git/openvpn-install │      234 │    5,597 │
-│ ~/lab/larafeed        │      158 │    2,590 │
-│ ~/lab/fast-resume     │       81 │    2,027 │
 │ ...                   │          │          │
 └───────────────────────┴──────────┴──────────┘
 ```
 
-## How It Works
+## How it works
 
 ### Architecture
 
-```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 SessionSearch                                          │
-│                                                                                        │
-│   • Orchestrates adapters in parallel (ThreadPoolExecutor)                             │
-│   • Compares file mtimes to detect changes (incremental updates)                       │
-│   • Delegates search queries to Tantivy index                                          │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-                      │                                       │
-         ┌────────────┴────────────┐                          │
-         ▼                         ▼                          ▼
-┌──────────────────┐    ┌───────────────────────────────────────────────────────────────────────────────┐
-│  TantivyIndex    │    │                                 Adapters                                       │
-│                  │    │  ┌────────┐ ┌───────┐ ┌───────┐ ┌─────────┐ ┌───────┐ ┌────────┐ ┌────┐        │
-│ • Fuzzy search   │◄───│  │ Claude │ │ Codex │ │Copilot│ │ Copilot │ │ Crush │ │OpenCode│ │Vibe│        │
-│ • mtime tracking │    │  │        │ │       │ │  CLI  │ │ VS Code │ │       │ │        │ │    │        │
-│                  │    │  └───┬────┘ └───┬───┘ └───┬───┘ └────┬────┘ └───┬───┘ └───┬────┘ └─┬──┘        │
-│ ~/.cache/        │    │      │          │         │          │          │         │        │           │
-│   fast-resume/   │    └──────┼──────────┼─────────┼──────────┼──────────┼─────────┼────────┼───────────┘
-└──────────────────┘           ▼          ▼         ▼          ▼          ▼         ▼        ▼
-                          ~/.claude/ ~/.codex/ ~/.copilot/  VS Code/   crush.db opencode/ ~/.vibe/
+```text
+┌────────────────────────────────────────────────────────────────────────────┐
+│                              SessionSearch                                 │
+│  • Dispatches adapters in parallel (ThreadPoolExecutor)                    │
+│  • Compares file mtimes to detect changes (incremental updates)            │
+│  • Delegates search queries to Tantivy index                               │
+└────────────────────────────────────────────────────────────────────────────┘
+                   │                                       │
+      ┌────────────┴────────────┐                          │
+      ▼                         ▼                          ▼
+┌──────────────────┐   ┌──────────────────────────────────────────────────────┐
+│  TantivyIndex    │   │                     Adapters                         │
+│                  │   │  claude · codex · copilot-cli · copilot-vscode       │
+│ • Fuzzy search   │◄──│  crush · gemini · kiro · opencode · vibe             │
+│ • mtime tracking │   └──────────────────────────────────────────────────────┘
+│                  │
+│ ~/.cache/        │
+│   fast-resume/   │
+└──────────────────┘
 ```
 
-### Session Parsing
+### Session parsing
 
 Each agent stores sessions differently. Adapters normalize them into a common `Session` structure:
 
-| Agent          | Format                                               | Parsing Strategy                                                                            |
-| -------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Claude Code    | JSONL in `~/.claude/projects/<project>/*.jsonl`      | Stream line-by-line, extract `user`/`assistant` messages, skip `agent-*` subprocess files   |
-| Codex          | JSONL in `~/.codex/sessions/**/*.jsonl`              | Line-by-line parsing, extract from `session_meta`, `response_item`, and `event_msg` entries |
-| Copilot CLI    | JSONL in `~/.copilot/session-state/*.jsonl`          | Line-by-line parsing, extract `user.message` and `assistant.message` types                  |
-| Copilot VSCode | JSON in VS Code's `workspaceStorage/*/chatSessions/` | Parse `requests` array with message text and response values                                |
-| Crush          | SQLite DB at `<project>/crush.db`                    | Query `sessions` and `messages` tables directly, parse JSON `parts` column                  |
-| OpenCode       | Split JSON in `~/.local/share/opencode/storage/`     | Lazy-load `message/` and `part/` per session for progressive indexing                       |
-| Vibe           | JSON in `~/.vibe/logs/session/session_*.json`        | Parse `messages` array with role-based content                                              |
+| Agent          | Format                                               | Parsing strategy                                                                           |
+| -------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Claude Code    | JSONL in `~/.claude/projects/<project>/*.jsonl`      | Stream line-by-line, extract `user`/`assistant` messages, skip `agent-*` subprocess files |
+| Codex CLI      | JSONL in `~/.codex/sessions/**/*.jsonl`              | Extract from `session_meta`, `response_item`, and `event_msg` entries                     |
+| Copilot CLI    | JSONL in `~/.copilot/session-state/**/*.jsonl`       | Extract `user.message` and `assistant.message` event types                                 |
+| Copilot VSCode | JSON in VS Code's `workspaceStorage/*/chatSessions/` | Parse `requests` array with message text and response values                               |
+| Gemini CLI     | JSON/JSONL in `~/.gemini/tmp/<slug>/chats/`          | Two coexisting formats: single-JSON and streaming JSONL; deduplicated by `sessionId`       |
+| Kiro CLI       | `<uuid>.json` (metadata) + `<uuid>.jsonl` (events)  | Read metadata for session info, parse event stream for `Prompt`/`AssistantMessage` kinds  |
+| OpenCode       | SQLite `opencode.db` (1.2+) or legacy split JSON     | SQL `json_extract` for text parts; legacy falls back to parallel file I/O                 |
+| Vibe           | Per-session folders with `meta.json` + `messages.jsonl` | Read metadata for yolo state and title, stream messages file for content                |
+| Crush          | SQLite `crush.db` per project                        | Query `sessions` and `messages` tables, parse JSON `parts` column                         |
 
-**The normalized Session structure:**
+**Normalized `Session` fields:**
 
 ```python
 @dataclass
 class Session:
-    id: str              # Unique identifier (usually filename or UUID)
-    agent: str           # "claude", "codex", "copilot-cli", "copilot-vscode", "crush", "opencode", "vibe"
-    title: str           # Summary or first user message (max 100 chars)
-    directory: str       # Working directory where session was created
+    id: str              # Unique identifier (usually UUID or filename stem)
+    agent: str           # e.g. "claude", "gemini", "kiro"
+    title: str           # First user message (max 80–100 chars)
+    directory: str       # Working directory where the session was created
     timestamp: datetime  # Last modified time
-    preview: str         # First 500 chars for preview pane
     content: str         # Full conversation text (» user, ␣␣ assistant)
-    message_count: int   # Conversation turns (user + assistant, excludes tool results)
+    message_count: int   # User + assistant turns (tool results excluded)
     mtime: float         # File mtime for incremental update detection
+    yolo: bool           # Session was started with auto-approve (Codex, Vibe only)
 ```
 
-**What gets indexed:**
+**What gets indexed**: user text messages and assistant text responses.
 
-- User text messages (the actual prompts you typed)
-- Assistant text responses
+**What is excluded**: tool call results, tool use invocations, system prompts, context summaries, and local command outputs (slash commands like `/context`). This keeps the index focused on the actual conversation.
 
-**What's excluded from indexing:**
+### Incremental indexing
 
-- Tool results (file contents, command outputs, API responses)
-- Tool use/calls (function invocations)
-- Meta messages (system prompts, context summaries)
-- Local command outputs (slash commands like `/context`)
+To avoid re-parsing every file on each launch:
 
-This keeps the index focused on the actual conversation and avoids bloating it with large tool outputs that are rarely useful for search.
+1. Load `(session_id → (mtime, agent))` pairs from the Tantivy index
+2. Scan session files, compare mtimes against stored values
+3. Re-parse only files where `current_mtime > known_mtime + 0.001` (1 ms tolerance)
+4. Detect sessions present in the index but no longer on disk (deleted)
+5. Apply changes atomically: delete removed sessions, upsert modified ones
 
-### Indexing
+Sessions stream into the index in batches and appear in the TUI progressively. OpenCode uses a `ThreadPoolExecutor` for its legacy JSON format (thousands of small files) and processes shorter sessions first for faster initial results.
 
-**Incremental updates** avoid re-parsing on every launch:
-
-1. Load known sessions from Tantivy index with their `mtime` values
-2. Scan session files, compare mtimes against known values
-3. Only parse files where `current_mtime > known_mtime + 0.001`
-4. Detect deleted sessions (in index but not on disk)
-5. Apply changes atomically: delete removed, upsert modified
-
-**Progressive indexing** with batched commits:
-
-```python
-def handle_session(session):
-    # Buffer session for batched indexing
-    pending_sessions.append(session)
-    if len(pending_sessions) >= BATCH_SIZE:
-        self._index.update_sessions(pending_sessions)  # Batch commit
-        pending_sessions.clear()
-        on_progress()  # TUI updates
-
-# Adapters call on_session as each session is parsed
-adapter.find_sessions_incremental(known, on_session=handle_session)
-```
-
-Sessions appear in the TUI progressively as they're parsed and batched. OpenCode uses parallel file I/O and processes smaller sessions first for faster initial results.
-
-**Schema versioning**: A `.schema_version` file tracks the index schema. If it doesn't match the code's `SCHEMA_VERSION` constant, the entire index is deleted and rebuilt. This prevents deserialization errors after upgrades.
+**Schema versioning**: `~/.cache/fast-resume/tantivy_index/.schema_version` tracks the index schema. If it doesn't match the code's `SCHEMA_VERSION` constant, the index is wiped and rebuilt. The current version is 21.
 
 ### Search
 
-[Tantivy](https://github.com/quickwit-oss/tantivy) is a Rust full-text search library (powers Quickwit, similar to Lucene). We use it via [tantivy-py](https://github.com/quickwit-oss/tantivy-py).
+[Tantivy](https://github.com/quickwit-oss/tantivy) is a Rust full-text search library used via [tantivy-py](https://github.com/quickwit-oss/tantivy-py).
 
-**Hybrid search** combines exact and fuzzy matching for best results:
-
-```python
-# Exact match (boosted 5x) - uses BM25 scoring
-exact_query = index.parse_query(query, ["title", "content"])
-boosted_exact = tantivy.Query.boost_query(exact_query, 5.0)
-
-# Fuzzy match (edit distance 1) - for typo tolerance
-for term in query.split():
-    fuzzy_title = tantivy.Query.fuzzy_term_query(schema, "title", term, distance=1, prefix=True)
-    fuzzy_content = tantivy.Query.fuzzy_term_query(schema, "content", term, distance=1, prefix=True)
-    ...
-
-# Combine: exact OR fuzzy (exact scores higher due to boost)
-tantivy.Query.boolean_query([
-    (tantivy.Occur.Should, boosted_exact),
-    (tantivy.Occur.Should, fuzzy_query),
-])
-```
-
-This ensures exact matches rank first while still finding typos like `auth midleware` → "authentication middleware".
-
-**Query lifecycle:**
+Queries combine an exact BM25 query (boosted 5×) with per-term `fuzzy_term_query(distance=1, prefix=True)` on both `title` and `content` fields. Exact matches rank first while typos still match.
 
 ```
 ┌─────────────┐   50ms    ┌─────────────┐  background  ┌─────────────┐
@@ -392,142 +338,119 @@ This ensures exact matches rank first while still finding typos like `auth midle
                           └─────────────┘              └─────────────┘
 ```
 
-### TUI
+### Resume handoff
 
-**Streaming results**: Sessions appear as each adapter completes, not after all finish.
-
-- **Fast path**: Index up-to-date → load synchronously, no spinner
-- **Slow path**: Changes detected → spinner, stream results via `on_progress()` callback
-
-**Preview context**: When searching, the preview pane jumps to the matching portion:
+When you press Enter, `fr` hands off to the agent's CLI using `os.execvp()`, which replaces the Python process entirely:
 
 ```python
-for term in query.lower().split():
-    pos = content.lower().find(term)
-    if pos != -1:
-        start = max(0, pos - 100)  # Show ~100 chars before match
-        preview_text = content[start:start + 1500]
-        break
+os.chdir(resume_dir)
+os.execvp(resume_cmd[0], resume_cmd)
 ```
 
-Matching terms are highlighted with Rich's `Text.stylize()`.
-
-### Resume Handoff
-
-When you press Enter on a session, fast-resume hands off to the original agent:
-
-```python
-# In cli.py after TUI exits
-resume_cmd, resume_dir = run_tui(query=query, agent_filter=agent)
-
-if resume_cmd:
-    # 1. Change to the session's original working directory
-    os.chdir(resume_dir)
-
-    # 2. Replace current process with agent's resume command
-    os.execvp(resume_cmd[0], resume_cmd)
-```
-
-`os.execvp()` replaces the Python process entirely with the agent CLI. This means:
-
-- No subprocess overhead
-- Shell history shows `claude --resume xyz`, not `fr`
-- Agent inherits the correct working directory
-- fast-resume process is gone after handoff
-
-Each adapter returns the appropriate command:
-
-| Agent          | Resume Command                  | With `--yolo`                                                  |
-| -------------- | ------------------------------- | -------------------------------------------------------------- |
-| Claude         | `claude --resume <id>`          | `claude --dangerously-skip-permissions --resume <id>`          |
-| Codex          | `codex resume <id>`             | `codex --dangerously-bypass-approvals-and-sandbox resume <id>` |
-| Copilot CLI    | `copilot --resume <id>`         | `copilot --allow-all-tools --allow-all-paths --resume <id>`    |
-| Copilot VSCode | `code <directory>`              | _(no change)_                                                  |
-| OpenCode       | `opencode <dir> --session <id>` | _(no change)_                                                  |
-| Vibe           | `vibe --resume <id>`            | `vibe --auto-approve --resume <id>`                            |
-| Crush          | `crush`                         | _(no change)_                                                  |
+This means no subprocess overhead, shell history shows the agent's command rather than `fr`, and the agent inherits the correct working directory. If `execvp` fails (e.g. the agent is not in `$PATH`), the error is printed and `fr` exits with code 1.
 
 ### Performance
 
-Why fast-resume feels instant:
+- **Cold start** (empty index): ~2 s
+- **Warm start** (no changes): ~50 ms
+- **Search query**: <10 ms for 10k+ sessions
 
-- **Tantivy (Rust)**: Search engine written in Rust, accessed via Python bindings. Handles fuzzy queries over 10k+ sessions in <10ms
-- **Incremental updates**: Only re-parse files where `mtime` changed. Second launch with no changes: ~50ms total
-- **Parallel adapters**: All adapters run simultaneously in ThreadPoolExecutor. Total time = slowest adapter, not sum
-- **Debounced search**: 50ms debounce prevents wasteful searches while typing
-- **Background workers**: Search runs in thread, UI never blocks
-- **orjson**: Rust-based JSON parsing, ~10x faster than stdlib json
-- **Streaming results**: Sessions appear as each adapter completes, not after all finish
-
-Typical performance on a machine with ~500 sessions:
-
-- Cold start (empty index): ~2s
-- Warm start (no changes): ~50ms
-- Search query: <10ms
+Factors: Tantivy handles queries in Rust; `orjson` parses JSON ~10× faster than the stdlib; all adapters run in a `ThreadPoolExecutor`; the 50 ms search debounce prevents wasted queries while typing; search runs on a background thread so the UI never blocks.
 
 ## Development
 
 ```bash
-# Clone and setup
-git clone https://github.com/angristan/fast-resume.git
-cd fast-resume
+git clone https://github.com/lusky3/fast-resume-plus.git
+cd fast-resume-plus
 uv sync
 
-# Run locally
+# Run from source
 uv run fr
 
 # Install pre-commit hooks
 uv run pre-commit install
 
-# Run tests
+# Run tests (parallel by default)
 uv run pytest -v
 
+# Run a single test
+uv run pytest tests/test_index.py::test_name -v
+
+# Run without parallelism (easier to debug)
+uv run pytest -n 0
+
 # Lint and format
-uv run ruff check .
-uv run ruff format .
+uv run ruff check . && uv run ruff format .
+
+# Type check
+uv run ty check src/
 ```
 
-### Project Structure
+Pre-commit hooks run `ruff` (with `--fix`), `ruff-format`, `ty check src/`, and the full `pytest` suite on every commit. Commits follow Conventional Commits (`feat`, `fix`, `chore`, etc.) and `commitlint` enforces a 72-character header limit. `semantic-release` cuts releases from `main` — do not hand-edit the version in `pyproject.toml` or `CHANGELOG.md`.
 
-```
-fast-resume/
+### Project structure
+
+```text
+fast-resume-plus/
 ├── src/fast_resume/
 │   ├── cli.py              # Click CLI entry point
-│   ├── config.py           # Constants, colors, paths
-│   ├── index.py            # TantivyIndex - search engine
-│   ├── search.py           # SessionSearch - adapter orchestration
-│   ├── tui.py              # Textual TUI application
-│   ├── assets/             # Agent icons (PNG)
+│   ├── config.py           # AGENTS dict, storage paths, SCHEMA_VERSION
+│   ├── index.py            # TantivyIndex — search engine wrapper
+│   ├── search.py           # SessionSearch — adapter orchestration
+│   ├── query.py            # Keyword DSL parser (agent:, dir:, date:)
+│   ├── assets/             # Agent icon PNGs
+│   ├── tui/
+│   │   ├── app.py          # FastResumeApp (Textual App subclass)
+│   │   ├── filter_bar.py   # Agent filter buttons
+│   │   ├── modal.py        # YoloModeModal (launch dialog)
+│   │   ├── preview.py      # Session preview pane
+│   │   ├── query.py        # Autocomplete / keyword highlighting
+│   │   ├── results_table.py
+│   │   ├── search_input.py
+│   │   ├── styles.py
+│   │   └── utils.py        # Clipboard helper
 │   └── adapters/
-│       ├── base.py         # Session dataclass, AgentAdapter protocol
-│       ├── claude.py       # Claude Code adapter
-│       ├── codex.py        # Codex CLI adapter
-│       ├── copilot.py      # GitHub Copilot CLI adapter
-│       ├── copilot_vscode.py # VS Code Copilot Chat adapter
-│       ├── crush.py        # Crush adapter
-│       ├── opencode.py     # OpenCode adapter
-│       └── vibe.py         # Vibe adapter
-├── tests/                  # pytest test suite
-├── pyproject.toml          # Dependencies and build config
+│       ├── base.py         # Session dataclass, AgentAdapter protocol, BaseSessionAdapter ABC
+│       ├── claude.py
+│       ├── codex.py
+│       ├── copilot.py
+│       ├── copilot_vscode.py
+│       ├── crush.py
+│       ├── gemini.py
+│       ├── kiro.py
+│       ├── opencode.py
+│       └── vibe.py
+├── tests/
+├── pyproject.toml
 └── README.md
 ```
 
-### Tech Stack
+### Tech stack
 
-| Component           | Library                                                             |
-| ------------------- | ------------------------------------------------------------------- |
-| TUI Framework       | [Textual](https://textual.textualize.io/)                           |
-| Terminal Formatting | [Rich](https://rich.readthedocs.io/)                                |
-| CLI Framework       | [Click](https://click.palletsprojects.com/)                         |
-| Search Engine       | [Tantivy](https://github.com/quickwit-oss/tantivy) (via tantivy-py) |
-| JSON Parsing        | [orjson](https://github.com/ijl/orjson) (fast)                      |
-| Date Formatting     | [humanize](https://python-humanize.readthedocs.io/)                 |
+| Component          | Library                                                             |
+| ------------------ | ------------------------------------------------------------------- |
+| TUI framework      | [Textual](https://textual.textualize.io/)                           |
+| Terminal formatting| [Rich](https://rich.readthedocs.io/)                                |
+| CLI framework      | [Click](https://click.palletsprojects.com/)                         |
+| Search engine      | [Tantivy](https://github.com/quickwit-oss/tantivy) (via tantivy-py) |
+| JSON parsing       | [orjson](https://github.com/ijl/orjson)                             |
+| Date formatting    | [humanize](https://python-humanize.readthedocs.io/)                 |
+| Type checker       | [ty](https://github.com/astral-sh/ty) (Astral)                      |
+
+### Adding an adapter
+
+1. Create `src/fast_resume/adapters/<agent>.py`
+2. Implement the `AgentAdapter` protocol (or subclass `BaseSessionAdapter` for file-based agents)
+3. Set `name`, `color`, `badge`, `supports_yolo`
+4. Implement `find_sessions()`, `find_sessions_incremental()`, `get_resume_command()`, `is_available()`, `get_raw_stats()`
+5. Register the adapter in `search.py` and add the agent name to the `AGENTS` dict in `config.py`
+6. Bump `SCHEMA_VERSION` in `config.py`
+7. Add an agent filter choice to the `--agent` option in `cli.py`
+8. Write `tests/test_<agent>_adapter.py` mirroring the structure of existing adapter tests
 
 ## Configuration
 
-fast-resume uses sensible defaults and requires no configuration.
-
-To clear the index and rebuild from scratch:
+`fast-resume-plus` requires no configuration file. The index lives at `~/.cache/fast-resume/`. To clear it:
 
 ```bash
 rm -rf ~/.cache/fast-resume/
