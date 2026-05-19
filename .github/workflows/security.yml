@@ -38,3 +38,19 @@ jobs:
         with:
           args: --severity-threshold=high
         continue-on-error: true
+
+  safety:
+    name: Safety CLI vulnerability scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Install dependencies
+        run: uv sync
+      - name: Run Safety CLI scan
+        uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_CLI_TOKEN }}
