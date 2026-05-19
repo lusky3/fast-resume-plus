@@ -38,6 +38,11 @@ dev = [
     "ty>=0.0.1a13",
 ]
 
+[tool.bandit]
+# B101: assert statements are intentional in test code — pytest requires them.
+# Suppressing globally; Bandit itself recommends excluding tests/ for B101.
+skips = ["B101"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 addopts = "-n auto"

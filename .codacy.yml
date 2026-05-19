@@ -1,0 +1,8 @@
+---
+# Codacy configuration — https://docs.codacy.com/repositories-configure/codacy-configuration-file/
+engines:
+  bandit:
+    enabled: true
+    # B101: assert is required by pytest in test files; not a real vulnerability.
+    exclude_paths:
+      - tests/
