@@ -16,7 +16,7 @@ jobs:
     name: Commit Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
@@ -36,7 +36,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Install dependencies
@@ -47,7 +47,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Run ruff check
@@ -58,7 +58,7 @@ jobs:
   typecheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Install dependencies
@@ -82,7 +82,7 @@ jobs:
     outputs:
       new_release_version: ${{ steps.check.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -128,7 +128,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: v${{ needs.release.outputs.new_release_version }}
       - name: Install uv
