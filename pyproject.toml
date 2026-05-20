@@ -1,6 +1,6 @@
 [project]
 name = "fast-resume-plus"
-version = "1.0.1"
+version = "1.0.2"
 description = "Fuzzy finder for coding agent session history (fast-resume fork with Kiro, Gemini, and TUI improvements)"
 readme = "README.md"
 requires-python = ">=3.14"

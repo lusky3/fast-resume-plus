@@ -1,3 +1,11 @@
+## [1.0.2](https://github.com/lusky3/fast-resume-plus/compare/v1.0.1...v1.0.2) (2026-05-20)
+
+
+### Bug Fixes
+
+* **adapters:** prevent argv injection via session metadata ([35a5e09](https://github.com/lusky3/fast-resume-plus/commit/35a5e097b3ce2bcaa8181d460a7ce1a3b42b736b))
+* **search:** handle adapter and writer failures without crashing ([9f4f0ab](https://github.com/lusky3/fast-resume-plus/commit/9f4f0ab7ed267b4794f085eb532e45abf6e9606f))
+
 ## [1.0.1](https://github.com/lusky3/fast-resume-plus/compare/v1.0.0...v1.0.1) (2026-05-20)
 
 
