@@ -133,9 +133,21 @@ def main(
             console.print(
                 f"[dim]Launching:[/dim] [bold]{escape_markup(shlex.join(resume_cmd))}[/bold]"
             )
-            # Execute the resume command
+            # Execute the resume command.
+            #
+            # Bandit/Codacy flag this as B603 (subprocess without static
+            # input) because both args are dynamic. The argv is constructed
+            # by per-agent adapters that:
+            #   - validate the binary name via shutil.which (see app.py
+            #     _do_resume, which substitutes the absolute path before
+            #     this exec runs);
+            #   - prevent argv injection from session metadata via either
+            #     an explicit `--` end-of-options separator or UUID
+            #     validation (see adapters/opencode.py, copilot_vscode.py,
+            #     codex.py).
+            # shell=False is implicit for execvp; no shell interpretation.
             try:
-                os.execvp(resume_cmd[0], resume_cmd)
+                os.execvp(resume_cmd[0], resume_cmd)  # nosec B606
             except OSError as e:
                 console.print(
                     f"[bold red]Error:[/bold red] couldn't execute "

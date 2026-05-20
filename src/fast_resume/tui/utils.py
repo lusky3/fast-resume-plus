@@ -136,21 +136,29 @@ def copy_to_clipboard(text: str) -> bool:
 
     Returns True on success, False on failure.
     """
+    # All four subprocess calls below use a fully static argv[0] (a known
+    # clipboard binary on each platform); user-supplied text only reaches
+    # the child as stdin via `input=`, never as an argv element. shell=False
+    # is the default, so the command is not interpreted by a shell.
     try:
         if sys.platform == "darwin":
-            subprocess.run(["pbcopy"], input=text.encode(), check=True)
+            subprocess.run(  # nosec B603
+                ["pbcopy"], input=text.encode(), check=True
+            )
         elif sys.platform == "win32":
-            subprocess.run(["clip"], input=text.encode(), check=True)
+            subprocess.run(  # nosec B603
+                ["clip"], input=text.encode(), check=True
+            )
         else:
             # Linux - try xclip or xsel
             try:
-                subprocess.run(
+                subprocess.run(  # nosec B603
                     ["xclip", "-selection", "clipboard"],
                     input=text.encode(),
                     check=True,
                 )
             except FileNotFoundError:
-                subprocess.run(
+                subprocess.run(  # nosec B603
                     ["xsel", "--clipboard", "--input"],
                     input=text.encode(),
                     check=True,
