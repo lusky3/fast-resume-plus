@@ -13,7 +13,7 @@ from .utils import ASSETS_DIR
 # Filter keys in display order (None = "All")
 FILTER_KEYS: list[str | None] = [
     None,
-    "agy",
+    "antigravity",
     "claude",
     "codex",
     "copilot-cli",

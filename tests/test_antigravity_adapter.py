@@ -50,9 +50,9 @@ def _write_history(history_file: Path, rows: list[dict]) -> None:
 
 class TestAntigravityAdapter:
     def test_name_and_attributes(self, adapter):
-        assert adapter.name == "agy"
+        assert adapter.name == "antigravity"
         assert adapter.color is not None
-        assert adapter.badge == "agy"
+        assert adapter.badge == "antigravity"
         assert adapter.supports_yolo is True
 
     def test_is_available_false_when_dir_missing(self, temp_dir):
@@ -83,7 +83,7 @@ class TestAntigravityAdapter:
 
         assert session is not None
         assert session.id == UUID_A
-        assert session.agent == "agy"
+        assert session.agent == "antigravity"
         assert session.title == "Untitled conversation"
         assert session.directory == ""
         assert session.content == ""
@@ -229,7 +229,7 @@ class TestAntigravityAdapter:
     def test_get_resume_command_uuid(self, adapter):
         session = Session(
             id=UUID_A,
-            agent="agy",
+            agent="antigravity",
             title="t",
             directory="/x",
             timestamp=datetime.now(),
@@ -244,7 +244,7 @@ class TestAntigravityAdapter:
     def test_get_resume_command_yolo(self, adapter):
         session = Session(
             id=UUID_A,
-            agent="agy",
+            agent="antigravity",
             title="t",
             directory="/x",
             timestamp=datetime.now(),
@@ -260,7 +260,7 @@ class TestAntigravityAdapter:
     def test_get_resume_command_rejects_non_uuid(self, adapter):
         session = Session(
             id="not-a-uuid --evil-flag",
-            agent="agy",
+            agent="antigravity",
             title="t",
             directory="/x",
             timestamp=datetime.now(),
@@ -297,7 +297,7 @@ class TestAntigravityAdapter:
         pb_path = _write_pb(conversations, UUID_A, mtime=time.time() - 100)
         # Snapshot the "known" baseline before any history exists.
         baseline_mtime = pb_path.stat().st_mtime
-        known: dict[str, tuple[float, str]] = {UUID_A: (baseline_mtime, "agy")}
+        known: dict[str, tuple[float, str]] = {UUID_A: (baseline_mtime, "antigravity")}
 
         # No history yet — nothing newer, so no re-parse.
         new_or_modified, deleted = adapter.find_sessions_incremental(known)
@@ -345,7 +345,7 @@ class TestAntigravityAdapter:
 
         # baseline = max(.pb mtime, history mtime); use that as `known`.
         baseline_mtime = max(pb_path.stat().st_mtime, history.stat().st_mtime)
-        known: dict[str, tuple[float, str]] = {UUID_A: (baseline_mtime, "agy")}
+        known: dict[str, tuple[float, str]] = {UUID_A: (baseline_mtime, "antigravity")}
 
         new_or_modified, deleted = adapter.find_sessions_incremental(known)
         assert new_or_modified == []

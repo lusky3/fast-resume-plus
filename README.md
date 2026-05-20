@@ -164,7 +164,7 @@ Arguments:
   QUERY                    Search query (optional)
 
 Options:
-  -a, --agent [agy|claude|codex|copilot-cli|copilot-vscode|crush|gemini|kiro|opencode|vibe]
+  -a, --agent [antigravity|claude|codex|copilot-cli|copilot-vscode|crush|gemini|kiro|opencode|vibe]
                            Filter by agent
   -d, --directory TEXT     Filter by directory (substring match)
   --no-tui                 Output list to stdout instead of TUI
@@ -273,7 +273,7 @@ Top Directories
 ┌──────────────────┐   ┌──────────────────────────────────────────────────────┐
 │  TantivyIndex    │   │                     Adapters                         │
 │                  │   │  claude · codex · copilot-cli · copilot-vscode       │
-│ • Fuzzy search   │◄──│  crush · gemini · agy · kiro · opencode · vibe       │
+│ • Fuzzy search   │◄──│  crush · gemini · antigravity · kiro · opencode · vibe │
 │ • mtime tracking │   └──────────────────────────────────────────────────────┘
 │                  │
 │ ~/.cache/        │

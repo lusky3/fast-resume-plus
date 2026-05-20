@@ -74,9 +74,9 @@ def _collect_prompts_and_max_ts(rows: list[dict]) -> tuple[str, int]:
 class AntigravityAdapter(BaseSessionAdapter):
     """Adapter for Google Antigravity CLI (`agy`) sessions."""
 
-    name = "agy"
-    color = AGENTS["agy"]["color"]
-    badge = AGENTS["agy"]["badge"]
+    name = "antigravity"
+    color = AGENTS["antigravity"]["color"]
+    badge = AGENTS["antigravity"]["badge"]
     supports_yolo = True
 
     def __init__(
@@ -342,7 +342,7 @@ class AntigravityAdapter(BaseSessionAdapter):
         """
         if not _UUID_RE.fullmatch(session.id):
             raise ValueError(
-                f"Refusing to resume agy session with non-UUID id: {session.id!r}"
+                f"Refusing to resume antigravity session with non-UUID id: {session.id!r}"
             )
         cmd = ["agy"]
         if yolo:
