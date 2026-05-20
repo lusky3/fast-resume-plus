@@ -896,6 +896,7 @@ class TestThreadPoolErrorHandling:
         self, search_env, configured_search, monkeypatch
     ):
         """If update_sessions keeps failing, on_error gets a terminal signal."""
+
         # Make every flush attempt fail.
         def always_fail(_sessions):
             raise RuntimeError("writer permanently boom")
