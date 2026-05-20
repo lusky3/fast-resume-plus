@@ -33,7 +33,9 @@ jobs:
           node-version: lts/*
       - run: npm install -D @commitlint/cli @commitlint/config-conventional
       - name: Validate current commit (last commit) with commitlint
-        if: github.event_name == 'push'
+        # Also runs on workflow_dispatch so manual releases can't bypass
+        # commit-message validation when the release job depends on us.
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: npx commitlint --last --verbose
       - name: Validate PR commits with commitlint
         if: github.event_name == 'pull_request'
@@ -156,11 +158,16 @@ jobs:
             npx semantic-release
           fi
       - name: Check if a new release was created
+        # Skip on dry-run: no tag should have been pushed, and we don't
+        # want to accidentally fire build-binaries if an unrelated tag
+        # appeared on main during the dry-run window.
+        if: inputs.dry_run != 'true'
         id: check
+        env:
+          BEFORE_TAG: ${{ steps.before.outputs.tag }}
         run: |
           git fetch --tags
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo '')
-          BEFORE_TAG="${{ steps.before.outputs.tag }}"
           if [ "$LATEST_TAG" != "$BEFORE_TAG" ] && [ -n "$LATEST_TAG" ]; then
             echo "version=${LATEST_TAG#v}" >> "$GITHUB_OUTPUT"
           fi
