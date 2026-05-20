@@ -354,8 +354,11 @@ class TestTUIResumeIntegration:
             )
             result = cli_runner.invoke(main, [])
 
-        # The literal text appears; the tags must not be interpreted.
-        assert "evil" in result.output
+        # The literal brackets must survive in the output — proving Rich
+        # treated them as text, not as a markup span. Asserting "evil" alone
+        # would pass whether or not escape_markup was applied (Rich strips
+        # the tags either way but keeps the word).
+        assert "[bold]evil[/bold]" in result.output
 
 
 class TestOutputFormatting:
