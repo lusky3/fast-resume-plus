@@ -4,12 +4,19 @@
 
 # fast-resume-plus
 
+[![CI](https://github.com/lusky3/fast-resume-plus/actions/workflows/workflow.yml/badge.svg)](https://github.com/lusky3/fast-resume-plus/actions/workflows/workflow.yml)
 [![PyPI version](https://img.shields.io/pypi/v/fast-resume-plus)](https://pypi.org/project/fast-resume-plus/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/fast-resume-plus)](https://pypi.org/project/fast-resume-plus/)
+[![codecov](https://codecov.io/github/lusky3/fast-resume-plus/graph/badge.svg?token=dB6NhLDkXA)](https://codecov.io/github/lusky3/fast-resume-plus)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=lusky3_fast-resume-plus&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=lusky3_fast-resume-plus)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=lusky3_fast-resume-plus&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=lusky3_fast-resume-plus)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=lusky3_fast-resume-plus&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=lusky3_fast-resume-plus)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=lusky3_fast-resume-plus&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=lusky3_fast-resume-plus)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/ba8380d1023148d2b0cfce4bd10ca074)](https://app.codacy.com/gh/lusky3/fast-resume-plus/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 Search and resume conversations across Claude Code, Codex, Copilot, Gemini, Kiro, OpenCode, Vibe, and Crush — all from one place.
 
-`fast-resume-plus` is a fork of [angristan/fast-resume](https://github.com/angristan/fast-resume) that adds Gemini CLI and Kiro adapters, improves the launch modal, and renames the package to `fast-resume-plus`.
+`fast-resume-plus` is a fork of [angristan/fast-resume](https://github.com/angristan/fast-resume) that adds Gemini CLI and Kiro adapters, and improves the launch modal.
 
 ![demo](https://github.com/user-attachments/assets/5ea9c2a5-a7c0-41bf-9357-394aeaaa0a06)
 
@@ -23,7 +30,7 @@ Coding agents do have a resume feature, but either they don't support searching,
 - **Full-text search**: Searches user messages and assistant responses, not just titles
 - **Tantivy-powered**: Search engine written in Rust, accessed via Python bindings. Fuzzy queries over thousands of sessions return in under 10 ms
 - **Fuzzy matching**: Edit distance 1 typo tolerance with exact hits ranked higher
-- **Direct resume**: Select a session, press Enter — `fr` `os.execvp`s the agent's CLI and exits
+- **Direct resume**: Select a session and press Enter; `fr` `os.execvp`s the agent's CLI and exits
 - **Incremental indexing**: Only re-parses files whose mtime changed; warm start is ~50 ms
 - **TUI with preview pane**: Agent-colored results table, live preview of conversation content
 - **Keyword filter DSL**: `agent:`, `dir:`, `date:` filters in the search box
@@ -386,7 +393,7 @@ uv run ruff check . && uv run ruff format .
 uv run ty check src/
 ```
 
-Pre-commit hooks run `ruff` (with `--fix`), `ruff-format`, `ty check src/`, and the full `pytest` suite on every commit. Commits follow Conventional Commits (`feat`, `fix`, `chore`, etc.) and `commitlint` enforces a 72-character header limit. `semantic-release` cuts releases from `main` — do not hand-edit the version in `pyproject.toml` or `CHANGELOG.md`.
+Pre-commit hooks run `ruff` (with `--fix`), `ruff-format`, `ty check src/`, and the full `pytest` suite on every commit. Commits follow Conventional Commits (`feat`, `fix`, `chore`, etc.) and `commitlint` enforces a 72-character header limit. `semantic-release` cuts releases from `main`; do not hand-edit the version in `pyproject.toml` or `CHANGELOG.md`.
 
 ### Project structure
 
