@@ -1,7 +1,6 @@
 """Tantivy full-text search index for sessions."""
 
 import logging
-import os
 import re
 import shutil
 from collections import Counter
