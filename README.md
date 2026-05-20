@@ -14,7 +14,7 @@
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=lusky3_fast-resume-plus&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=lusky3_fast-resume-plus)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/ba8380d1023148d2b0cfce4bd10ca074)](https://app.codacy.com/gh/lusky3/fast-resume-plus/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
-Search and resume conversations across Claude Code, Codex, Copilot, Gemini, Kiro, OpenCode, Vibe, and Crush — all from one place.
+Search and resume conversations across Claude Code, Codex, Copilot, Gemini, Antigravity, Kiro, OpenCode, Vibe, and Crush — all from one place.
 
 `fast-resume-plus` is a fork of [angristan/fast-resume](https://github.com/angristan/fast-resume) that adds Gemini CLI and Kiro adapters, and improves the launch modal.
 
@@ -45,6 +45,7 @@ Coding agents do have a resume feature, but either they don't support searching,
 | Copilot CLI    | `~/.copilot/session-state/**/*.jsonl`                              | `copilot --resume <id>`                         | `--allow-all-tools --allow-all-paths`                   | No               |
 | Copilot VS Code | `<VS Code storage>/workspaceStorage/*/chatSessions/*.json`        | `code <directory>`                              | _(n/a)_                                                 | No               |
 | Gemini CLI     | `~/.gemini/tmp/<slug>/chats/session-*.json[l]`                     | `gemini --resume <id>`                          | `--yolo`                                                | No               |
+| Antigravity CLI | `~/.gemini/antigravity-cli/conversations/<uuid>.pb` (+ history.jsonl)  | `agy --conversation <id>`                       | `--dangerously-skip-permissions`                        | No               |
 | Kiro CLI       | `~/.kiro/sessions/cli/<uuid>.json` + `<uuid>.jsonl`                | `kiro-cli chat --resume-id <id>`                | `--trust-all-tools`                                     | No               |
 | OpenCode       | `~/.local/share/opencode/opencode.db` (or legacy split JSON)       | `opencode <dir> --session <id>`                 | _(not supported)_                                       | No               |
 | Vibe           | `~/.vibe/logs/session/session_*/`                                  | `vibe --resume <id>`                            | `--agent auto-approve`                                  | Yes              |
@@ -52,7 +53,9 @@ Coding agents do have a resume feature, but either they don't support searching,
 
 **Yolo auto-detection**: Codex and Vibe store the permissions mode in their session files. Sessions originally started in yolo mode are automatically resumed in yolo mode.
 
-**Launch modal**: For agents that support yolo but don't auto-detect it (Claude, Copilot CLI, Gemini, Kiro), pressing Enter shows a modal with a yolo checkbox. Press `Space`/`y`/`n` to toggle, then Enter to launch, or Esc to cancel. Pass `--yolo` to always skip the prompt.
+**Launch modal**: For agents that support yolo but don't auto-detect it (Claude, Copilot CLI, Gemini, Antigravity, Kiro), pressing Enter shows a modal with a yolo checkbox. Press `Space`/`y`/`n` to toggle, then Enter to launch, or Esc to cancel. Pass `--yolo` to always skip the prompt.
+
+**Antigravity caveat**: Antigravity (`agy`) is Google's announced successor to Gemini CLI. Because Antigravity encrypts conversation blobs at rest, only user prompts are indexable — assistant responses are not. The two CLIs coexist; fast-resume-plus will show both.
 
 ## Installation
 
@@ -161,7 +164,7 @@ Arguments:
   QUERY                    Search query (optional)
 
 Options:
-  -a, --agent [claude|codex|copilot-cli|copilot-vscode|crush|gemini|kiro|opencode|vibe]
+  -a, --agent [agy|claude|codex|copilot-cli|copilot-vscode|crush|gemini|kiro|opencode|vibe]
                            Filter by agent
   -d, --directory TEXT     Filter by directory (substring match)
   --no-tui                 Output list to stdout instead of TUI
@@ -270,7 +273,7 @@ Top Directories
 ┌──────────────────┐   ┌──────────────────────────────────────────────────────┐
 │  TantivyIndex    │   │                     Adapters                         │
 │                  │   │  claude · codex · copilot-cli · copilot-vscode       │
-│ • Fuzzy search   │◄──│  crush · gemini · kiro · opencode · vibe             │
+│ • Fuzzy search   │◄──│  crush · gemini · agy · kiro · opencode · vibe       │
 │ • mtime tracking │   └──────────────────────────────────────────────────────┘
 │                  │
 │ ~/.cache/        │
@@ -289,6 +292,7 @@ Each agent stores sessions differently. Adapters normalize them into a common `S
 | Copilot CLI    | JSONL in `~/.copilot/session-state/**/*.jsonl`       | Extract `user.message` and `assistant.message` event types                                 |
 | Copilot VSCode | JSON in VS Code's `workspaceStorage/*/chatSessions/` | Parse `requests` array with message text and response values                               |
 | Gemini CLI     | JSON/JSONL in `~/.gemini/tmp/<slug>/chats/`          | Two coexisting formats: single-JSON and streaming JSONL; deduplicated by `sessionId`       |
+| Antigravity CLI | `<uuid>.pb` (encrypted) + `history.jsonl` (plain) | Conversation blobs are encrypted at rest; user prompts come from the unencrypted history.jsonl sidecar joined by conversationId. Assistant responses are not indexable. |
 | Kiro CLI       | `<uuid>.json` (metadata) + `<uuid>.jsonl` (events)  | Read metadata for session info, parse event stream for `Prompt`/`AssistantMessage` kinds  |
 | OpenCode       | SQLite `opencode.db` (1.2+) or legacy split JSON     | SQL `json_extract` for text parts; legacy falls back to parallel file I/O                 |
 | Vibe           | Per-session folders with `meta.json` + `messages.jsonl` | Read metadata for yolo state and title, stream messages file for content                |
@@ -326,7 +330,7 @@ To avoid re-parsing every file on each launch:
 
 Sessions stream into the index in batches and appear in the TUI progressively. OpenCode uses a `ThreadPoolExecutor` for its legacy JSON format (thousands of small files) and processes shorter sessions first for faster initial results.
 
-**Schema versioning**: `~/.cache/fast-resume/tantivy_index/.schema_version` tracks the index schema. If it doesn't match the code's `SCHEMA_VERSION` constant, the index is wiped and rebuilt. The current version is 21.
+**Schema versioning**: `~/.cache/fast-resume/tantivy_index/.schema_version` tracks the index schema. If it doesn't match the code's `SCHEMA_VERSION` constant, the index is wiped and rebuilt. The current version is 22.
 
 ### Search
 
@@ -418,6 +422,7 @@ fast-resume-plus/
 │   │   └── utils.py        # Clipboard helper
 │   └── adapters/
 │       ├── base.py         # Session dataclass, AgentAdapter protocol, BaseSessionAdapter ABC
+│       ├── antigravity.py
 │       ├── claude.py
 │       ├── codex.py
 │       ├── copilot.py

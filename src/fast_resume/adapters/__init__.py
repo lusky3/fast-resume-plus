@@ -8,6 +8,7 @@ from .base import (
     Session,
     SessionCallback,
 )
+from .antigravity import AntigravityAdapter
 from .claude import ClaudeAdapter
 from .codex import CodexAdapter
 from .copilot import CopilotAdapter
@@ -25,6 +26,7 @@ __all__ = [
     "RawAdapterStats",
     "Session",
     "SessionCallback",
+    "AntigravityAdapter",
     "ClaudeAdapter",
     "CodexAdapter",
     "CopilotAdapter",

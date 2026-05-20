@@ -14,6 +14,7 @@ AGENTS = {
     "copilot-vscode": {"color": "#007ACC", "badge": "vscode"},
     "gemini": {"color": "#4285F4", "badge": "gemini"},
     "kiro": {"color": "#5C1FFB", "badge": "kiro"},
+    "agy": {"color": "#9333EA", "badge": "agy"},
 }
 
 # Storage paths
@@ -27,12 +28,15 @@ CRUSH_PROJECTS_FILE = Path.home() / ".local" / "share" / "crush" / "projects.jso
 COPILOT_DIR = Path.home() / ".copilot" / "session-state"
 GEMINI_DIR = Path.home() / ".gemini"
 KIRO_DIR = Path.home() / ".kiro" / "sessions" / "cli"
+ANTIGRAVITY_DIR = Path.home() / ".gemini" / "antigravity-cli"
+ANTIGRAVITY_CONVERSATIONS_DIR = ANTIGRAVITY_DIR / "conversations"
+ANTIGRAVITY_HISTORY_FILE = ANTIGRAVITY_DIR / "history.jsonl"
 
 # Storage location
 CACHE_DIR = Path.home() / ".cache" / "fast-resume"
 INDEX_DIR = CACHE_DIR / "tantivy_index"
 LOG_FILE = CACHE_DIR / "parse-errors.log"
-SCHEMA_VERSION = 21  # Bump when schema changes (21: add gemini + kiro adapters)
+SCHEMA_VERSION = 22  # Bump when schema changes (22: added antigravity (agy) adapter)
 
 # Per-agent binary overrides read from environment variables.
 # Set FAST_RESUME_<AGENT>_BIN to an absolute path to use a binary that isn't on PATH.

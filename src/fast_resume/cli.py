@@ -35,6 +35,7 @@ def _is_existing_directory(path: str) -> bool:
     "--agent",
     type=click.Choice(
         [
+            "agy",
             "claude",
             "codex",
             "copilot-cli",
