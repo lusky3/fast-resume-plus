@@ -2,6 +2,7 @@
 
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Callable
 
 from .adapters import (
@@ -17,7 +18,9 @@ from .adapters import (
     Session,
     VibeAdapter,
 )
+from .adapters.base import ParseError
 from .index import TantivyIndex
+from .logging_config import log_parse_error
 from .query import Filter, parse_query
 
 
@@ -89,8 +92,18 @@ class SessionSearch:
             return adapter.find_sessions_incremental(known)
 
         with ThreadPoolExecutor(max_workers=len(self.adapters)) as executor:
-            results = executor.map(get_incremental, self.adapters)
-            for new_or_modified, deleted_ids in results:
+            futures = {executor.submit(get_incremental, a): a for a in self.adapters}
+            for future in as_completed(futures):
+                adapter = futures[future]
+                try:
+                    new_or_modified, deleted_ids = future.result()
+                except Exception as e:
+                    # Adapter raised - log and skip; keep draining other futures
+                    # so a single broken adapter can't take down the loader.
+                    log_parse_error(
+                        adapter.name, Path("<scan>"), type(e).__name__, str(e)
+                    )
+                    continue
                 all_new_or_modified.extend(new_or_modified)
                 all_deleted_ids.extend(deleted_ids)
 
@@ -172,7 +185,10 @@ class SessionSearch:
 
             Snapshot the buffer under `lock` (so callbacks can keep
             appending), then commit under `writer_lock` (Tantivy's writer
-            is exclusive — concurrent flushes raise LockBusy).
+            is exclusive — concurrent flushes raise LockBusy). If the
+            writer raises, put the snapshot back at the head of the queue
+            so the next flush retries instead of silently dropping the
+            sessions.
             """
             nonlocal pending_sessions
             with lock:
@@ -181,7 +197,23 @@ class SessionSearch:
                 batch = pending_sessions
                 pending_sessions = []
             with writer_lock:
-                self._index.update_sessions(batch)
+                try:
+                    self._index.update_sessions(batch)
+                except Exception as e:
+                    # Re-track the lost batch so it can be retried; the
+                    # snapshot was already cleared from pending_sessions.
+                    with lock:
+                        pending_sessions = batch + pending_sessions
+                    log_parse_error("index", Path("<writer>"), type(e).__name__, str(e))
+                    if on_error is not None:
+                        on_error(
+                            ParseError(
+                                agent="index",
+                                file_path="<writer>",
+                                error_type=type(e).__name__,
+                                message=str(e),
+                            )
+                        )
 
         def handle_session(session: Session) -> None:
             """Buffer session for batched indexing (thread-safe)."""
@@ -216,7 +248,28 @@ class SessionSearch:
                     executor.submit(get_incremental, a): a for a in self.adapters
                 }
                 for future in as_completed(futures):
-                    _new_or_modified, deleted_ids = future.result()
+                    adapter = futures[future]
+                    try:
+                        _new_or_modified, deleted_ids = future.result()
+                    except Exception as e:
+                        # Adapter raised - log and skip so a single broken
+                        # adapter can't freeze the TUI on the loading spinner.
+                        log_parse_error(
+                            adapter.name, Path("<scan>"), type(e).__name__, str(e)
+                        )
+                        if on_error is not None:
+                            on_error(
+                                ParseError(
+                                    agent=adapter.name,
+                                    file_path="<scan>",
+                                    error_type=type(e).__name__,
+                                    message=str(e),
+                                )
+                            )
+                        # Still flush any sessions the adapter emitted before
+                        # raising; nothing to accumulate for deletions.
+                        flush_pending()
+                        continue
 
                     # Flush outside the deletion-accumulation critical section.
                     flush_pending()

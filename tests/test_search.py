@@ -788,3 +788,106 @@ class TestProgressiveIndexing:
         # One session should be updated
         assert updated_count == 1
         assert new_count == 0
+
+
+class _BoomAdapter:
+    """Adapter stub whose incremental scan always raises."""
+
+    name = "boom"
+    color = "red"
+    badge = "B"
+
+    def find_sessions(self):  # pragma: no cover - unused
+        return []
+
+    def find_sessions_incremental(self, known, on_error=None, on_session=None):
+        raise RuntimeError("adapter exploded")
+
+    def get_resume_command(self, session, yolo=False):  # pragma: no cover - unused
+        return []
+
+    def is_available(self) -> bool:
+        return True
+
+    def get_raw_stats(self):  # pragma: no cover - unused
+        from fast_resume.adapters.base import RawAdapterStats
+
+        return RawAdapterStats(
+            agent=self.name,
+            data_dir="<boom>",
+            available=True,
+            file_count=0,
+            total_bytes=0,
+        )
+
+    @property
+    def supports_yolo(self) -> bool:
+        return False
+
+
+class TestThreadPoolErrorHandling:
+    """Failing adapters and writer errors must not crash the loader."""
+
+    def test_get_all_sessions_skips_broken_adapter(self, search_env, configured_search):
+        """A raising adapter should not crash get_all_sessions()."""
+        # Inject a broken adapter alongside the working ones.
+        configured_search.adapters.append(_BoomAdapter())
+
+        sessions = configured_search.get_all_sessions()
+
+        # Working adapters still produced sessions.
+        assert len(sessions) == 2
+        agents = {s.agent for s in sessions}
+        assert "claude" in agents
+        assert "vibe" in agents
+
+    def test_index_sessions_parallel_skips_broken_adapter(
+        self, search_env, configured_search
+    ):
+        """A raising adapter should not crash index_sessions_parallel()."""
+        configured_search.adapters.append(_BoomAdapter())
+
+        errors: list = []
+
+        def on_error(err):
+            errors.append(err)
+
+        sessions, new_count, updated_count, _deleted_count = (
+            configured_search.index_sessions_parallel(lambda: None, on_error=on_error)
+        )
+
+        # Healthy adapters still produced their sessions.
+        assert len(sessions) == 2
+        assert new_count == 2
+        assert updated_count == 0
+
+        # The broken adapter surfaced through on_error.
+        assert any(e.agent == "boom" for e in errors)
+
+    def test_flush_pending_retracks_batch_on_writer_failure(
+        self, search_env, configured_search, monkeypatch
+    ):
+        """If TantivyIndex.update_sessions raises, the batch must be re-queued."""
+        # Force update_sessions to raise on the first call only so the final
+        # flush in the try/finally still succeeds.
+        call_count = {"n": 0}
+        original_update = configured_search._index.update_sessions
+
+        def flaky_update(sessions):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise RuntimeError("writer boom")
+            return original_update(sessions)
+
+        monkeypatch.setattr(configured_search._index, "update_sessions", flaky_update)
+
+        errors: list = []
+        # batch_size=1 ensures the first session triggers an immediate flush.
+        sessions, _new, _upd, _del = configured_search.index_sessions_parallel(
+            lambda: None, on_error=errors.append, batch_size=1
+        )
+
+        # The writer failure was surfaced.
+        assert any(e.agent == "index" for e in errors)
+        # The failed batch was retried on the next flush, so no session is lost.
+        assert len(sessions) == 2
