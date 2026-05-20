@@ -13,24 +13,10 @@ import tantivy
 
 from .adapters.base import Session
 from .config import INDEX_DIR, SCHEMA_VERSION
+from .logging_config import _restrict_permissions
 from .query import DateFilter, DateOp, Filter
 
 _log = logging.getLogger(__name__)
-
-
-def _restrict_dir(path: Path) -> None:
-    """Owner-only permissions on a directory; warn but don't fail.
-
-    The cache holds indexed conversation content from every installed
-    agent CLI. 0o700 is intentional — broader permissions (e.g. 0o755)
-    would let other local accounts read the indexed prompts/responses.
-    """
-    try:
-        os.chmod(
-            path, 0o700
-        )  # nosem: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions
-    except OSError as e:
-        _log.warning("Could not restrict permissions on %s: %s", path, e)
 
 
 # Version file to detect schema changes
@@ -119,7 +105,7 @@ class TantivyIndex:
     def _write_version(self) -> None:
         """Write current schema version to version file."""
         self._version_file.parent.mkdir(parents=True, exist_ok=True)
-        _restrict_dir(self._version_file.parent)
+        _restrict_permissions(self._version_file.parent, 0o700)
         self._version_file.write_text(str(SCHEMA_VERSION))
 
     def _clear(self) -> None:
@@ -146,7 +132,7 @@ class TantivyIndex:
         else:
             # Create new index
             self.index_path.mkdir(parents=True, exist_ok=True)
-            _restrict_dir(self.index_path)
+            _restrict_permissions(self.index_path, 0o700)
             self._index = tantivy.Index(self._schema, path=str(self.index_path))
             self._write_version()
 
