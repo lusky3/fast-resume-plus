@@ -14,7 +14,7 @@ from datetime import datetime
 from pathlib import Path
 
 from ..config import AGENTS, KIRO_DIR
-from ..logging_config import log_parse_error
+from ..logging_config import log_parse_error, log_parse_info
 from .base import BaseSessionAdapter, ErrorCallback, ParseError, Session, truncate_title
 
 
@@ -53,6 +53,19 @@ class KiroAdapter(BaseSessionAdapter):
         The matching `<uuid>.jsonl` (if present) is read for message content.
         """
         meta_file = session_file
+
+        # Kiro occasionally leaves zero-byte placeholder metadata files behind
+        # for sessions that never produced content (e.g. abandoned right after
+        # launch). Skip these silently — log at INFO so the file is traceable
+        # but don't invoke on_error, which would surface a toast in the TUI.
+        try:
+            if meta_file.stat().st_size == 0:
+                log_parse_info("kiro", meta_file, "empty metadata file")
+                return None
+        except OSError as e:
+            self._report(on_error, str(meta_file), "OSError", str(e))
+            return None
+
         try:
             with open(meta_file, "rb") as f:
                 meta = orjson.loads(f.read())
