@@ -1,4 +1,4 @@
-"""fast-resume: Fuzzy finder for coding agent session history."""
+"""fast-resume-plus: Fuzzy finder for coding agent session history."""
 
 from importlib.metadata import version
 

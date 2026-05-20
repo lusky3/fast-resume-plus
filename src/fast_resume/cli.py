@@ -1,4 +1,4 @@
-"""CLI entry point for fast-resume."""
+"""CLI entry point for fast-resume-plus."""
 
 import os
 import shlex

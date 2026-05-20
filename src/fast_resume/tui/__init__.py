@@ -1,4 +1,4 @@
-"""TUI package for fast-resume."""
+"""TUI package for fast-resume-plus."""
 
 from .. import __version__
 from .app import FastResumeApp
@@ -35,7 +35,7 @@ def run_tui(
     if not no_version_check and app._available_update:
         print(
             f"\nUpdate available: {__version__} → {app._available_update}\n"
-            f"Run: uv tool upgrade fast-resume"
+            f"Run: uv tool upgrade fast-resume-plus"
         )
 
     return app.get_resume_command(), app.get_resume_directory()

@@ -1,4 +1,4 @@
-"""Logging configuration for fast-resume."""
+"""Logging configuration for fast-resume-plus."""
 
 import logging
 from pathlib import Path
