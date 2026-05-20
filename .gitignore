@@ -40,3 +40,9 @@ htmlcov/
 
 # uv
 .python-version
+
+# Node (semantic-release dev deps)
+node_modules/
+
+# Claude Code worktrees
+.claude/

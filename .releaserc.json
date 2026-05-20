@@ -12,7 +12,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "sed -i 's/^version = .*/version = \"${nextRelease.version}\"/' pyproject.toml && uv lock",
+        "prepareCmd": "python -c \"import re; p=open('pyproject.toml').read(); open('pyproject.toml','w').write(re.sub(r'^version = .*', f'version = \\\"${nextRelease.version}\\\"', p, count=1, flags=re.M))\" && uv lock",
         "publishCmd": "uv build && uv publish"
       }
     ],
