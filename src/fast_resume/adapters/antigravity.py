@@ -152,58 +152,17 @@ class AntigravityAdapter(BaseSessionAdapter):
         """Parse a single Antigravity conversation given its `.pb` path."""
         pb_path = session_file
         session_id = pb_path.stem
-
         rows = self._rows_for(session_id, pb_path=pb_path, on_error=on_error)
 
         if not rows:
-            # Conversation exists but has no recorded user prompts (early
-            # rows lacked `conversationId`, or it was created via some
-            # path that doesn't write to history.jsonl). Still emit a row
-            # so the conversation is searchable / resumable by id.
-            try:
-                ts = datetime.fromtimestamp(pb_path.stat().st_mtime)
-            except OSError as e:
-                self._report(on_error, str(pb_path), "OSError", str(e))
-                return None
-            return Session(
-                id=session_id,
-                agent=self.name,
-                title="Untitled conversation",
-                directory="",
-                timestamp=ts,
-                content="",
-                message_count=0,
-            )
+            return self._fallback_session(session_id, pb_path, on_error)
 
-        first_row = rows[0]
-        first_prompt = str(first_row.get("display") or "").strip()
-        directory = str(first_row.get("workspace") or "")
-
-        title = (
-            truncate_title(first_prompt, max_length=100, word_break=False)
-            if first_prompt
-            else "Untitled conversation"
-        )
-
-        # User prompts only — assistant text is encrypted and unrecoverable.
-        content_parts: list[str] = []
-        max_ts_ms = 0
-        for row in rows:
-            text = str(row.get("display") or "").strip()
-            if text:
-                content_parts.append(f"» {text}")
-            ts_val = row.get("timestamp")
-            if isinstance(ts_val, int):
-                if ts_val > max_ts_ms:
-                    max_ts_ms = ts_val
-
+        title, directory, content, max_ts_ms = self._aggregate_rows(rows)
         if max_ts_ms > 0:
             timestamp = datetime.fromtimestamp(max_ts_ms / 1000)
         else:
-            try:
-                timestamp = datetime.fromtimestamp(pb_path.stat().st_mtime)
-            except OSError as e:
-                self._report(on_error, str(pb_path), "OSError", str(e))
+            timestamp = self._pb_timestamp(pb_path, on_error)
+            if timestamp is None:
                 return None
 
         return Session(
@@ -212,9 +171,67 @@ class AntigravityAdapter(BaseSessionAdapter):
             title=title,
             directory=directory,
             timestamp=timestamp,
-            content="\n\n".join(content_parts),
+            content=content,
             message_count=len(rows),
         )
+
+    def _fallback_session(
+        self, session_id: str, pb_path: Path, on_error: ErrorCallback
+    ) -> Session | None:
+        """Build a content-less Session for a `.pb` with no history rows.
+
+        Conversation exists but has no recorded user prompts (early rows
+        lacked `conversationId`, or it was created via some path that
+        doesn't write to history.jsonl). Still emit a row so the
+        conversation is searchable / resumable by id.
+        """
+        timestamp = self._pb_timestamp(pb_path, on_error)
+        if timestamp is None:
+            return None
+        return Session(
+            id=session_id,
+            agent=self.name,
+            title="Untitled conversation",
+            directory="",
+            timestamp=timestamp,
+            content="",
+            message_count=0,
+        )
+
+    def _aggregate_rows(self, rows: list[dict]) -> tuple[str, str, str, int]:
+        """Aggregate history rows for a single conversation.
+
+        Returns ``(title, directory, content, max_ts_ms)``. User prompts only —
+        assistant text is encrypted and unrecoverable.
+        """
+        first_row = rows[0]
+        first_prompt = str(first_row.get("display") or "").strip()
+        directory = str(first_row.get("workspace") or "")
+        title = (
+            truncate_title(first_prompt, max_length=100, word_break=False)
+            if first_prompt
+            else "Untitled conversation"
+        )
+
+        content_parts: list[str] = []
+        max_ts_ms = 0
+        for row in rows:
+            text = str(row.get("display") or "").strip()
+            if text:
+                content_parts.append(f"» {text}")
+            ts_val = row.get("timestamp")
+            if isinstance(ts_val, int) and ts_val > max_ts_ms:
+                max_ts_ms = ts_val
+
+        return title, directory, "\n\n".join(content_parts), max_ts_ms
+
+    def _pb_timestamp(self, pb_path: Path, on_error: ErrorCallback) -> datetime | None:
+        """Stat the .pb file for its mtime; report and return None on OSError."""
+        try:
+            return datetime.fromtimestamp(pb_path.stat().st_mtime)
+        except OSError as e:
+            self._report(on_error, str(pb_path), "OSError", str(e))
+            return None
 
     def _rows_for(
         self,
@@ -234,15 +251,13 @@ class AntigravityAdapter(BaseSessionAdapter):
 
     def _ensure_history_loaded(self, on_error: ErrorCallback = None) -> None:
         if not self._history_file.exists():
-            self._history_cache_mtime = 0.0
-            self._history_cache = {}
+            self._reset_history_cache()
             return
         try:
             mtime = self._history_file.stat().st_mtime
         except OSError as e:
             self._report(on_error, str(self._history_file), "OSError", str(e))
-            self._history_cache_mtime = 0.0
-            self._history_cache = {}
+            self._reset_history_cache()
             return
 
         if self._history_cache_mtime == mtime:
@@ -252,33 +267,41 @@ class AntigravityAdapter(BaseSessionAdapter):
         try:
             with open(self._history_file, "rb") as f:
                 for line in f:
-                    line = line.strip()
-                    if not line:
+                    parsed = self._parse_history_line(line, on_error)
+                    if parsed is None:
                         continue
-                    try:
-                        entry = orjson.loads(line)
-                    except orjson.JSONDecodeError as e:
-                        self._report(
-                            on_error,
-                            str(self._history_file),
-                            "JSONDecodeError",
-                            str(e),
-                        )
-                        continue
-                    if not isinstance(entry, dict):
-                        continue
-                    conv_id = entry.get("conversationId")
-                    if not isinstance(conv_id, str) or not conv_id:
-                        continue
+                    conv_id, entry = parsed
                     rows_by_conv.setdefault(conv_id, []).append(entry)
         except OSError as e:
             self._report(on_error, str(self._history_file), "OSError", str(e))
-            self._history_cache_mtime = 0.0
-            self._history_cache = {}
+            self._reset_history_cache()
             return
 
         self._history_cache_mtime = mtime
         self._history_cache = rows_by_conv
+
+    def _parse_history_line(
+        self, line: bytes, on_error: ErrorCallback
+    ) -> tuple[str, dict] | None:
+        """Decode one `history.jsonl` line; return ``(conv_id, entry)`` or None.
+
+        Returns None for blank lines, malformed JSON (reported via on_error),
+        non-dict payloads, and rows missing a usable `conversationId`.
+        """
+        line = line.strip()
+        if not line:
+            return None
+        try:
+            entry = orjson.loads(line)
+        except orjson.JSONDecodeError as e:
+            self._report(on_error, str(self._history_file), "JSONDecodeError", str(e))
+            return None
+        if not isinstance(entry, dict):
+            return None
+        conv_id = entry.get("conversationId")
+        if not isinstance(conv_id, str) or not conv_id:
+            return None
+        return conv_id, entry
 
     def _report(
         self,
