@@ -1052,7 +1052,36 @@ class TestOpenCodeCommon:
 
         cmd = adapter.get_resume_command(session)
 
-        assert cmd == ["opencode", "/home/user/project", "--session", "ses_abc123"]
+        assert cmd == [
+            "opencode",
+            "--",
+            "/home/user/project",
+            "--session",
+            "ses_abc123",
+        ]
+
+    def test_get_resume_command_uses_end_of_options_separator(self, adapter):
+        """A `--` separator must precede the directory so a tampered session
+        whose directory starts with `-` cannot inject flags into the
+        os.execvp argv."""
+        from fast_resume.adapters.base import Session
+
+        session = Session(
+            id="ses_abc123",
+            agent="opencode",
+            title="Test",
+            directory="--malicious-flag",
+            timestamp=datetime.now(),
+            content="",
+        )
+
+        cmd = adapter.get_resume_command(session)
+
+        assert cmd[0] == "opencode"
+        assert cmd[1] == "--"
+        assert "--malicious-flag" in cmd
+        # Ensure the malicious value is positional (after `--`), not parsed as a flag.
+        assert cmd.index("--") < cmd.index("--malicious-flag")
 
     def test_find_sessions_returns_empty_when_unavailable(self, adapter):
         """Test that find_sessions returns empty list when unavailable."""

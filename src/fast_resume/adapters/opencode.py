@@ -712,7 +712,7 @@ class OpenCodeAdapter:
 
     def get_resume_command(self, session: Session, yolo: bool = False) -> list[str]:
         """Get command to resume an OpenCode session."""
-        return ["opencode", session.directory, "--session", session.id]
+        return ["opencode", "--", session.directory, "--session", session.id]
 
     def get_raw_stats(self) -> RawAdapterStats:
         """Get raw statistics from the OpenCode data."""
