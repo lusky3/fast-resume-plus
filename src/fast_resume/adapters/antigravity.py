@@ -48,6 +48,29 @@ _UUID_RE = re.compile(
 )
 
 
+def _row_display(row: dict) -> str:
+    """Return the trimmed user-prompt text for a history row, or empty string."""
+    return str(row.get("display") or "").strip()
+
+
+def _collect_prompts_and_max_ts(rows: list[dict]) -> tuple[str, int]:
+    """Walk history rows, returning ``(joined_prompts, max_ts_ms)``.
+
+    Extracted from `_aggregate_rows` to keep the orchestrator's cyclomatic
+    complexity under Codacy's threshold.
+    """
+    content_parts: list[str] = []
+    max_ts_ms = 0
+    for row in rows:
+        text = _row_display(row)
+        if text:
+            content_parts.append(f"» {text}")
+        ts_val = row.get("timestamp")
+        if isinstance(ts_val, int) and ts_val > max_ts_ms:
+            max_ts_ms = ts_val
+    return "\n\n".join(content_parts), max_ts_ms
+
+
 class AntigravityAdapter(BaseSessionAdapter):
     """Adapter for Google Antigravity CLI (`agy`) sessions."""
 
@@ -205,25 +228,15 @@ class AntigravityAdapter(BaseSessionAdapter):
         assistant text is encrypted and unrecoverable.
         """
         first_row = rows[0]
-        first_prompt = str(first_row.get("display") or "").strip()
+        first_prompt = _row_display(first_row)
         directory = str(first_row.get("workspace") or "")
         title = (
             truncate_title(first_prompt, max_length=100, word_break=False)
             if first_prompt
             else "Untitled conversation"
         )
-
-        content_parts: list[str] = []
-        max_ts_ms = 0
-        for row in rows:
-            text = str(row.get("display") or "").strip()
-            if text:
-                content_parts.append(f"» {text}")
-            ts_val = row.get("timestamp")
-            if isinstance(ts_val, int) and ts_val > max_ts_ms:
-                max_ts_ms = ts_val
-
-        return title, directory, "\n\n".join(content_parts), max_ts_ms
+        content, max_ts_ms = _collect_prompts_and_max_ts(rows)
+        return title, directory, content, max_ts_ms
 
     def _pb_timestamp(self, pb_path: Path, on_error: ErrorCallback) -> datetime | None:
         """Stat the .pb file for its mtime; report and return None on OSError."""
