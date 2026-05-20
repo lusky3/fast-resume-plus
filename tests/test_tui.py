@@ -969,10 +969,12 @@ class TestFastResumeAppResumeCommand:
                 # App should have exited
                 assert not app.is_running
 
-                # Resume command should be set
+                # Resume command should be set. The TUI rewrites argv[0]
+                # to the absolute path returned by shutil.which (TOCTOU
+                # hardening) — see mock_shutil_which_for_tui fixture.
                 cmd = app.get_resume_command()
                 assert cmd is not None
-                assert cmd == ["claude", "--resume", "session-1"]
+                assert cmd == ["/usr/bin/fake-agent", "--resume", "session-1"]
 
     @pytest.mark.asyncio
     async def test_resume_sets_directory(self, mock_search_engine, sample_sessions):
@@ -1491,10 +1493,13 @@ class TestPathValidation:
                     await pilot.press("enter")
                     await pilot.pause()
 
-                    # App should have exited
+                    # App should have exited. The first element is the
+                    # absolute path resolved via shutil.which (TOCTOU fix):
+                    # the TUI replaces the bare binary name so the later
+                    # os.chdir + os.execvp can't pick up a different binary.
                     assert not app.is_running
                     assert app.get_resume_command() == [
-                        "claude",
+                        "/usr/bin/claude",
                         "--resume",
                         "session-1",
                     ]

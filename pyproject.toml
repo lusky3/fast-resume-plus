@@ -4,6 +4,23 @@ version = "1.0.2"
 description = "Fuzzy finder for coding agent session history (fast-resume fork with Kiro, Gemini, and TUI improvements)"
 readme = "README.md"
 requires-python = ">=3.14"
+license = {text = "MIT"}
+authors = [
+    {name = "Stanislas Lange"},
+    {name = "lusky3"},
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Terminals",
+    "Topic :: Utilities",
+    "Environment :: Console",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS",
+    "Intended Audience :: Developers",
+]
 dependencies = [
     "textual>=7.4.0",
     "rich>=13.0.0,<14.3.2",  # 14.3.2 causes freeze with images in iTerm
@@ -13,6 +30,12 @@ dependencies = [
     "orjson>=3.10.0",
     "tantivy>=0.25.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/lusky3/fast-resume-plus"
+Repository = "https://github.com/lusky3/fast-resume-plus"
+Issues = "https://github.com/lusky3/fast-resume-plus/issues"
+Changelog = "https://github.com/lusky3/fast-resume-plus/blob/main/CHANGELOG.md"
 
 [project.scripts]
 fr = "fast_resume.cli:main"
