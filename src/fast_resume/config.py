@@ -1,4 +1,4 @@
-"""Configuration and constants for fast-resume."""
+"""Configuration and constants for fast-resume-plus."""
 
 import os
 from pathlib import Path
