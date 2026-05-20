@@ -5,6 +5,17 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Releases are deliberate: trigger this workflow from the Actions tab
+  # (workflow_dispatch) to run semantic-release and publish to PyPI.
+  # Pushes to main only run tests/lint/typecheck/security scans.
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run semantic-release in --dry-run mode (no publish)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
 
 permissions:
   contents: read
@@ -22,7 +33,9 @@ jobs:
           node-version: lts/*
       - run: npm install -D @commitlint/cli @commitlint/config-conventional
       - name: Validate current commit (last commit) with commitlint
-        if: github.event_name == 'push'
+        # Also runs on workflow_dispatch so manual releases can't bypass
+        # commit-message validation when the release job depends on us.
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: npx commitlint --last --verbose
       - name: Validate PR commits with commitlint
         if: github.event_name == 'pull_request'
@@ -91,7 +104,8 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     needs: [commitlint, test, lint, typecheck]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Manual trigger only — runs from main via workflow_dispatch.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     # The "pypi" environment is required so the OIDC token is scoped to this
     # environment — PyPI Trusted Publishing is configured to match it.
     environment: pypi
@@ -136,13 +150,24 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           # uv publish uses the OIDC token automatically when id-token: write
           # is set — no UV_PUBLISH_TOKEN needed with Trusted Publishing.
-        run: npx semantic-release
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            npx semantic-release --dry-run
+          else
+            npx semantic-release
+          fi
       - name: Check if a new release was created
+        # Skip on dry-run: no tag should have been pushed, and we don't
+        # want to accidentally fire build-binaries if an unrelated tag
+        # appeared on main during the dry-run window.
+        if: inputs.dry_run != 'true'
         id: check
+        env:
+          BEFORE_TAG: ${{ steps.before.outputs.tag }}
         run: |
           git fetch --tags
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo '')
-          BEFORE_TAG="${{ steps.before.outputs.tag }}"
           if [ "$LATEST_TAG" != "$BEFORE_TAG" ] && [ -n "$LATEST_TAG" ]; then
             echo "version=${LATEST_TAG#v}" >> "$GITHUB_OUTPUT"
           fi
