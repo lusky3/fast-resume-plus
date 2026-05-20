@@ -555,16 +555,24 @@ class FastResumeApp(App):
             # Accept an absolute path that is directly executable, or fall back
             # to PATH resolution. Without this check a missing binary surfaces
             # as a raw FileNotFoundError after execvp when the TUI is already gone.
+            # We resolve to an absolute path here so that the subsequent
+            # os.chdir + os.execvp in cli.py cannot land on a different binary
+            # (TOCTOU): PATH or its contents could change between resolution
+            # and exec, and chdir may itself alter what PATH-relative resolution
+            # returns.
             bin_found = os.path.isabs(bin_path) and os.access(bin_path, os.X_OK)
-            if not bin_found and shutil.which(bin_path) is None:
-                self.notify(
-                    f"Couldn't find '{bin_path}' on your PATH. "
-                    f"Is the {agent_name} CLI installed? "
-                    f"Set FAST_RESUME_{agent_name.upper().replace('-', '_')}_BIN to override.",
-                    severity="error",
-                    timeout=8,
-                )
-                return
+            if not bin_found:
+                resolved = shutil.which(bin_path)
+                if resolved is None:
+                    self.notify(
+                        f"Couldn't find '{bin_path}' on your PATH. "
+                        f"Is the {agent_name} CLI installed? "
+                        f"Set FAST_RESUME_{agent_name.upper().replace('-', '_')}_BIN to override.",
+                        severity="error",
+                        timeout=8,
+                    )
+                    return
+                resume_cmd = [resolved] + resume_cmd[1:]
         self._resume_command = resume_cmd
         self._resume_directory = self.selected_session.directory
         self.exit()

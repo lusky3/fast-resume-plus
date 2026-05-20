@@ -1,6 +1,7 @@
 """Logging configuration for fast-resume-plus."""
 
 import logging
+import os
 from pathlib import Path
 
 from .config import CACHE_DIR, LOG_FILE
@@ -9,13 +10,37 @@ from .config import CACHE_DIR, LOG_FILE
 parse_logger = logging.getLogger("fast_resume.parse_errors")
 
 
+def _restrict_permissions(path: Path, mode: int) -> None:
+    """Apply restrictive permissions to a path, swallowing platform errors.
+
+    Some filesystems (e.g. NTFS via WSL) and platforms (Windows) don't
+    support POSIX chmod semantics. We don't want a permissions hint to
+    crash startup, so log a warning and move on.
+
+    Owner-only modes (0o700 / 0o600) are intentional — the cache stores
+    indexed conversation content and the log can contain file paths
+    that shouldn't leak to other local accounts.
+    """
+    try:
+        os.chmod(
+            path, mode
+        )  # nosem: python.lang.security.audit.insecure-file-permissions.insecure-file-permissions
+    except OSError as e:
+        logging.getLogger(__name__).warning(
+            "Could not restrict permissions on %s: %s", path, e
+        )
+
+
 def setup_logging() -> None:
     """Set up logging with file handler for parse errors.
 
     Logs are written to ~/.cache/fast-resume/parse-errors.log
     """
-    # Ensure cache directory exists
+    # Ensure cache directory exists with owner-only access. The directory
+    # contains indexed conversation content from any installed agent CLI,
+    # so other local accounts shouldn't be able to read it.
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    _restrict_permissions(CACHE_DIR, 0o700)
 
     # Configure parse error logger
     parse_logger.setLevel(logging.WARNING)
@@ -25,6 +50,12 @@ def setup_logging() -> None:
         # File handler - append mode, rotates on size
         handler = logging.FileHandler(LOG_FILE, mode="a", encoding="utf-8")
         handler.setLevel(logging.WARNING)
+
+        # Tighten permissions on the log file if it has been created. The
+        # FileHandler only actually opens the file lazily on first write
+        # in some configurations, so guard with exists().
+        if LOG_FILE.exists():
+            _restrict_permissions(LOG_FILE, 0o600)
 
         # Format: timestamp - level - message
         formatter = logging.Formatter(

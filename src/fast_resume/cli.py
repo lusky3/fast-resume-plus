@@ -18,6 +18,16 @@ from .search import SessionSearch
 from .tui import run_tui
 
 
+def _is_existing_directory(path: str) -> bool:
+    """Return True if path is an existing directory.
+
+    Wrapped as a module-level function so tests can patch it without
+    affecting the global os.path.isdir (which Path.mkdir relies on
+    internally for exist_ok=True semantics).
+    """
+    return os.path.isdir(path)
+
+
 @click.command()
 @click.argument("query", required=False, default="")
 @click.option(
@@ -122,14 +132,25 @@ def main(
             no_version_check=no_version_check,
         )
         if resume_cmd:
-            # Change to session directory before running command
+            console = Console()
+            # Change to session directory before running command. Validate
+            # first — the directory may have been deleted or moved since the
+            # session was recorded. If it's missing, warn and fall back to
+            # the current cwd rather than crashing or chdir'ing somewhere
+            # unexpected. The TUI is already gone so we can't prompt.
             if resume_dir:
-                os.chdir(resume_dir)
+                if _is_existing_directory(resume_dir):
+                    os.chdir(resume_dir)
+                else:
+                    console.print(
+                        f"[yellow]Session directory does not exist: "
+                        f"{escape_markup(resume_dir)}[/yellow]"
+                    )
+                    console.print("[dim]Launching in current directory.[/dim]")
             # Print a brief launch banner so the gap between the TUI tearing
             # down and the agent CLI drawing its own screen isn't silent.
             # Escape the joined command: session ids come from JSON on disk
             # and could otherwise be parsed as Rich markup.
-            console = Console()
             console.print(
                 f"[dim]Launching:[/dim] [bold]{escape_markup(shlex.join(resume_cmd))}[/bold]"
             )

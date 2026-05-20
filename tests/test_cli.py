@@ -296,6 +296,7 @@ class TestTUIResumeIntegration:
         """Test that selecting a session changes to session directory."""
         with (
             patch("fast_resume.cli.run_tui") as mock_run_tui,
+            patch("fast_resume.cli._is_existing_directory", return_value=True),
             patch("fast_resume.cli.os.chdir") as mock_chdir,
             patch("fast_resume.cli.os.execvp") as mock_execvp,
         ):
@@ -320,6 +321,41 @@ class TestTUIResumeIntegration:
 
         mock_chdir.assert_not_called()
         mock_execvp.assert_called_once()
+
+    def test_tui_resume_missing_directory_skips_chdir(self, cli_runner):
+        """Missing session directory: warn and skip chdir, but still launch."""
+        with (
+            patch("fast_resume.cli.run_tui") as mock_run_tui,
+            patch("fast_resume.cli._is_existing_directory", return_value=False),
+            patch("fast_resume.cli.os.chdir") as mock_chdir,
+            patch("fast_resume.cli.os.execvp") as mock_execvp,
+        ):
+            mock_run_tui.return_value = (
+                ["claude", "--resume", "123"],
+                "/no/such/dir",
+            )
+            result = cli_runner.invoke(main, [])
+
+        mock_chdir.assert_not_called()
+        mock_execvp.assert_called_once()
+        assert "does not exist" in result.output
+        assert "/no/such/dir" in result.output
+
+    def test_tui_resume_missing_directory_escapes_markup(self, cli_runner):
+        """Warning escapes Rich markup in the directory path."""
+        with (
+            patch("fast_resume.cli.run_tui") as mock_run_tui,
+            patch("fast_resume.cli._is_existing_directory", return_value=False),
+            patch("fast_resume.cli.os.execvp"),
+        ):
+            mock_run_tui.return_value = (
+                ["claude", "--resume", "123"],
+                "/tmp/[bold]evil[/bold]",
+            )
+            result = cli_runner.invoke(main, [])
+
+        # The literal text appears; the tags must not be interpreted.
+        assert "evil" in result.output
 
 
 class TestOutputFormatting:
@@ -398,6 +434,7 @@ class TestLaunchBanner:
         """Launch banner shows 'Launching:' followed by the command."""
         with (
             patch("fast_resume.cli.run_tui") as mock_run_tui,
+            patch("fast_resume.cli._is_existing_directory", return_value=True),
             patch("fast_resume.cli.os.chdir"),
             patch("fast_resume.cli.os.execvp"),
         ):
@@ -425,6 +462,7 @@ class TestLaunchBanner:
         """Session IDs that look like Rich markup are escaped in the banner."""
         with (
             patch("fast_resume.cli.run_tui") as mock_run_tui,
+            patch("fast_resume.cli._is_existing_directory", return_value=True),
             patch("fast_resume.cli.os.chdir"),
             patch("fast_resume.cli.os.execvp"),
         ):
@@ -449,6 +487,7 @@ class TestLaunchBanner:
         """OSError from os.execvp is caught and an error message is printed."""
         with (
             patch("fast_resume.cli.run_tui") as mock_run_tui,
+            patch("fast_resume.cli._is_existing_directory", return_value=True),
             patch("fast_resume.cli.os.chdir"),
             patch("fast_resume.cli.os.execvp", side_effect=OSError("No such file")),
         ):
@@ -495,6 +534,7 @@ class TestLaunchBanner:
         """When os.execvp succeeds the exit code is 0 (CliRunner returns 0)."""
         with (
             patch("fast_resume.cli.run_tui") as mock_run_tui,
+            patch("fast_resume.cli._is_existing_directory", return_value=True),
             patch("fast_resume.cli.os.chdir"),
             patch("fast_resume.cli.os.execvp"),
         ):
