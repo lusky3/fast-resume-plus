@@ -35,14 +35,17 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
-      - name: Install dependencies
-        run: uv sync
+      # Snyk's Python image bundles its own poetry/pip and cannot resolve
+      # python>=3.14 deps. Export a pinned requirements.txt from uv.lock and
+      # point Snyk at that instead of recreating the virtualenv itself.
+      - name: Export pinned requirements.txt for Snyk
+        run: uv export --format requirements-txt --no-hashes --output-file requirements.txt
       - name: Run Snyk
         uses: snyk/actions/python@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high
+          args: --severity-threshold=high --file=requirements.txt --package-manager=pip --skip-unresolved
 
   safety:
     name: Safety CLI vulnerability scan
