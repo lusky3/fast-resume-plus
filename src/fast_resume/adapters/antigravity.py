@@ -181,9 +181,17 @@ class AntigravityAdapter(BaseSessionAdapter):
             return self._fallback_session(session_id, pb_path, on_error)
 
         title, directory, content, max_ts_ms = self._aggregate_rows(rows)
+        timestamp: datetime | None = None
         if max_ts_ms > 0:
-            timestamp = datetime.fromtimestamp(max_ts_ms / 1000)
-        else:
+            # history.jsonl is untrusted on disk — a corrupted or tampered
+            # row could carry an out-of-range int that overflows the
+            # platform's time_t. Fall back to the .pb mtime in any such
+            # case rather than crashing the scan.
+            try:
+                timestamp = datetime.fromtimestamp(max_ts_ms / 1000)
+            except OverflowError, OSError, ValueError:
+                timestamp = None
+        if timestamp is None:
             timestamp = self._pb_timestamp(pb_path, on_error)
             if timestamp is None:
                 return None

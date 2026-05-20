@@ -132,6 +132,33 @@ class TestAntigravityAdapter:
         # max(timestamp) wins, converted from ms.
         assert session.timestamp == datetime.fromtimestamp(1779296800000 / 1000)
 
+    def test_out_of_range_timestamp_falls_back_to_pb_mtime(
+        self, adapter, antigravity_dirs
+    ):
+        """A tampered ms timestamp that overflows time_t falls back safely."""
+        conversations, history = antigravity_dirs
+        pb_path = _write_pb(conversations, UUID_A)
+        # Pick a value that's an int and >0 (so it passes _aggregate_rows
+        # filters) but, when divided by 1000, overflows the platform's
+        # time_t in datetime.fromtimestamp. Year ~9999999 in seconds works.
+        ridiculous_ms = 10_000_000_000_000_000_000
+        _write_history(
+            history,
+            [
+                {
+                    "display": "ok prompt",
+                    "timestamp": ridiculous_ms,
+                    "workspace": "/tmp",
+                    "conversationId": UUID_A,
+                },
+            ],
+        )
+
+        sessions = adapter.find_sessions()
+        assert len(sessions) == 1
+        # Falls back to the .pb mtime instead of crashing.
+        assert sessions[0].timestamp == datetime.fromtimestamp(pb_path.stat().st_mtime)
+
     def test_rows_missing_conversation_id_are_skipped(self, adapter, antigravity_dirs):
         conversations, history = antigravity_dirs
         _write_pb(conversations, UUID_A)
