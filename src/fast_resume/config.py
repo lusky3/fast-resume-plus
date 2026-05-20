@@ -36,7 +36,7 @@ ANTIGRAVITY_HISTORY_FILE = ANTIGRAVITY_DIR / "history.jsonl"
 CACHE_DIR = Path.home() / ".cache" / "fast-resume"
 INDEX_DIR = CACHE_DIR / "tantivy_index"
 LOG_FILE = CACHE_DIR / "parse-errors.log"
-SCHEMA_VERSION = 23  # Bump when schema changes (23: rename agy → antigravity)
+SCHEMA_VERSION = 22  # Bump when schema changes (22: added antigravity adapter)
 
 # Per-agent binary overrides read from environment variables.
 # Set FAST_RESUME_<AGENT>_BIN to an absolute path to use a binary that isn't on PATH.
