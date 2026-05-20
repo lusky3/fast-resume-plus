@@ -310,7 +310,7 @@ class CopilotVSCodeAdapter:
         via command line. We open VS Code in the session's directory instead.
         """
         if session.directory:
-            return ["code", session.directory]
+            return ["code", "--", session.directory]
         return ["code"]
 
     def get_raw_stats(self) -> RawAdapterStats:

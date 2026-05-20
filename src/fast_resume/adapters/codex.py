@@ -1,5 +1,7 @@
 """Codex CLI session adapter."""
 
+import re
+
 import orjson
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +9,11 @@ from pathlib import Path
 from ..config import AGENTS, CODEX_DIR
 from ..logging_config import log_parse_error
 from .base import BaseSessionAdapter, ErrorCallback, ParseError, Session, truncate_title
+
+_UUID_RE = re.compile(
+    r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    re.IGNORECASE,
+)
 
 
 class CodexAdapter(BaseSessionAdapter):
@@ -211,7 +218,17 @@ class CodexAdapter(BaseSessionAdapter):
         return current_files
 
     def get_resume_command(self, session: Session, yolo: bool = False) -> list[str]:
-        """Get command to resume a Codex CLI session."""
+        """Get command to resume a Codex CLI session.
+
+        Codex session IDs are always UUIDs (sourced from session filenames).
+        We validate the ID matches a UUID pattern before passing it as a
+        positional argument to ``codex resume`` so a tampered session file
+        cannot inject CLI flags (e.g. ``--dangerously-bypass-*``).
+        """
+        if not _UUID_RE.fullmatch(session.id):
+            raise ValueError(
+                f"Refusing to resume codex session with non-UUID id: {session.id!r}"
+            )
         cmd = ["codex"]
         if yolo:
             cmd.append("--dangerously-bypass-approvals-and-sandbox")

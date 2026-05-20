@@ -94,9 +94,11 @@ class OpenCodeAdapter:
             # Fetch message roles via json_extract (avoids Python-side JSON parsing)
             CHUNK = 900
             messages_by_session: dict[str, list[tuple[str, str]]] = defaultdict(list)
+            # `.format` only expands "?" placeholder count for the IN clause;
+            # actual values bind via the parameters tuple below.
             for i in range(0, len(session_ids), CHUNK):
                 chunk = session_ids[i : i + CHUNK]
-                cursor.execute(
+                cursor.execute(  # nosem
                     """
                     SELECT m.id, m.session_id, json_extract(m.data, '$.role')
                     FROM message m
@@ -108,11 +110,13 @@ class OpenCodeAdapter:
                 for row in cursor.fetchall():
                     messages_by_session[row[1]].append((row[0], row[2] or ""))
 
-            # Fetch text parts via json_extract, filtered in SQL
+            # Fetch text parts via json_extract, filtered in SQL.
+            # `.format` only expands "?" placeholder count for the IN clause;
+            # actual values bind via the parameters tuple below.
             parts_by_message: dict[str, list[str]] = defaultdict(list)
             for i in range(0, len(session_ids), CHUNK):
                 chunk = session_ids[i : i + CHUNK]
-                cursor.execute(
+                cursor.execute(  # nosem
                     """
                     SELECT p.message_id, json_extract(p.data, '$.text')
                     FROM part p
@@ -272,9 +276,11 @@ class OpenCodeAdapter:
             messages_by_session: dict[str, list[tuple[str, str]]] = defaultdict(list)
 
             CHUNK = 900
+            # `.format` only expands "?" placeholder count for IN clauses;
+            # actual values bind via the parameters tuple in cursor.execute.
             for i in range(0, len(fetch_ids), CHUNK):
                 chunk = fetch_ids[i : i + CHUNK]
-                cursor.execute(
+                cursor.execute(  # nosem
                     """
                     SELECT id, session_id, json_extract(data, '$.role')
                     FROM message
@@ -290,7 +296,7 @@ class OpenCodeAdapter:
             parts_by_message: dict[str, list[str]] = defaultdict(list)
             for i in range(0, len(fetch_ids), CHUNK):
                 chunk = fetch_ids[i : i + CHUNK]
-                cursor.execute(
+                cursor.execute(  # nosem
                     """
                     SELECT message_id, json_extract(data, '$.text')
                     FROM part
@@ -712,7 +718,7 @@ class OpenCodeAdapter:
 
     def get_resume_command(self, session: Session, yolo: bool = False) -> list[str]:
         """Get command to resume an OpenCode session."""
-        return ["opencode", session.directory, "--session", session.id]
+        return ["opencode", "--session", session.id, "--", session.directory]
 
     def get_raw_stats(self) -> RawAdapterStats:
         """Get raw statistics from the OpenCode data."""

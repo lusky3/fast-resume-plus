@@ -398,7 +398,27 @@ class TestCopilotVSCodeAdapter:
         )
 
         cmd = adapter.get_resume_command(session)
-        assert cmd == ["code", "/test/project"]
+        assert cmd == ["code", "--", "/test/project"]
+
+    def test_get_resume_command_uses_end_of_options_separator(self):
+        """A `--` separator must precede the directory so a tampered session
+        whose directory starts with `-` cannot inject flags into the
+        os.execvp argv."""
+        from fast_resume.adapters.base import Session
+
+        adapter = CopilotVSCodeAdapter()
+
+        session = Session(
+            id="test-id",
+            agent="copilot-vscode",
+            title="Test",
+            directory="--malicious-flag",
+            timestamp=datetime.now(),
+            content="",
+        )
+
+        cmd = adapter.get_resume_command(session)
+        assert cmd == ["code", "--", "--malicious-flag"]
 
     def test_get_resume_command_no_directory(self):
         """Test resume command when session has no directory."""

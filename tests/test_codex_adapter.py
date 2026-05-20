@@ -244,10 +244,12 @@ class TestCodexAdapter:
 
     def test_get_resume_command(self, adapter):
         """Test resume command generation."""
+        import pytest
+
         from fast_resume.adapters.base import Session
 
         session = Session(
-            id="session-abc123",
+            id="0193e0d4-1f00-7c00-8000-abcdef012345",
             agent="codex",
             title="Test",
             directory="/test",
@@ -257,7 +259,35 @@ class TestCodexAdapter:
 
         cmd = adapter.get_resume_command(session)
 
-        assert cmd == ["codex", "resume", "session-abc123"]
+        assert cmd == [
+            "codex",
+            "resume",
+            "0193e0d4-1f00-7c00-8000-abcdef012345",
+        ]
+
+        # yolo variant
+        cmd_yolo = adapter.get_resume_command(session, yolo=True)
+        assert cmd_yolo == [
+            "codex",
+            "--dangerously-bypass-approvals-and-sandbox",
+            "resume",
+            "0193e0d4-1f00-7c00-8000-abcdef012345",
+        ]
+
+        # Non-UUID session ids are refused so a tampered session file cannot
+        # inject flags (e.g. ``--dangerously-bypass-*``) into the argv.
+        bad_session = Session(
+            id="--dangerously-bypass-approvals-and-sandbox",
+            agent="codex",
+            title="Bad",
+            directory="/test",
+            timestamp=datetime.now(),
+            content="",
+        )
+        with pytest.raises(ValueError, match="non-UUID id"):
+            adapter.get_resume_command(bad_session)
+        with pytest.raises(ValueError, match="non-UUID id"):
+            adapter.get_resume_command(bad_session, yolo=True)
 
     def test_find_sessions_recursive(self, temp_dir):
         """Test that find_sessions searches recursively in date directories."""
