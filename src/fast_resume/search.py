@@ -72,8 +72,18 @@ class SessionSearch:
 
         return sessions
 
-    def get_all_sessions(self, force_refresh: bool = False) -> list[Session]:
-        """Get all sessions from all adapters with incremental updates."""
+    def get_all_sessions(
+        self,
+        force_refresh: bool = False,
+        on_error: ErrorCallback = None,
+    ) -> list[Session]:
+        """Get all sessions from all adapters with incremental updates.
+
+        If an adapter raises during its incremental scan, the error is
+        logged to parse-errors.log and forwarded to ``on_error`` (when
+        provided); the remaining adapters keep loading. This mirrors
+        the behavior of ``index_sessions_parallel``.
+        """
         if self._sessions is not None and not force_refresh:
             return self._sessions
 
@@ -98,11 +108,21 @@ class SessionSearch:
                 try:
                     new_or_modified, deleted_ids = future.result()
                 except Exception as e:
-                    # Adapter raised - log and skip; keep draining other futures
-                    # so a single broken adapter can't take down the loader.
+                    # Adapter raised - log, notify caller, and skip; keep
+                    # draining other futures so a single broken adapter
+                    # can't take down the loader.
                     log_parse_error(
                         adapter.name, Path("<scan>"), type(e).__name__, str(e)
                     )
+                    if on_error is not None:
+                        on_error(
+                            ParseError(
+                                agent=adapter.name,
+                                file_path="<scan>",
+                                error_type=type(e).__name__,
+                                message=str(e),
+                            )
+                        )
                     continue
                 all_new_or_modified.extend(new_or_modified)
                 all_deleted_ids.extend(deleted_ids)
@@ -287,6 +307,29 @@ class SessionSearch:
             if all_deleted_ids:
                 self._index.delete_sessions(all_deleted_ids)
             self._streaming_in_progress = False
+
+        # If the writer kept failing, pending_sessions still holds the
+        # sessions we couldn't commit. Signal a terminal failure to
+        # on_error so the caller doesn't treat the run as fully successful;
+        # the success counters were incremented optimistically in
+        # handle_session and now don't match what reached the index.
+        if pending_sessions:
+            dropped = len(pending_sessions)
+            log_parse_error(
+                "index",
+                Path("<writer>"),
+                "IndexFlushError",
+                f"{dropped} sessions could not be committed after final flush",
+            )
+            if on_error is not None:
+                on_error(
+                    ParseError(
+                        agent="index",
+                        file_path="<writer>",
+                        error_type="IndexFlushError",
+                        message=f"{dropped} sessions could not be committed after final flush",
+                    )
+                )
 
         # Load final state from index
         self._sessions = self._index.get_all_sessions()

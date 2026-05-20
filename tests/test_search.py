@@ -891,3 +891,32 @@ class TestThreadPoolErrorHandling:
         assert any(e.agent == "index" for e in errors)
         # The failed batch was retried on the next flush, so no session is lost.
         assert len(sessions) == 2
+
+    def test_index_sessions_parallel_signals_terminal_flush_failure(
+        self, search_env, configured_search, monkeypatch
+    ):
+        """If update_sessions keeps failing, on_error gets a terminal signal."""
+        # Make every flush attempt fail.
+        def always_fail(_sessions):
+            raise RuntimeError("writer permanently boom")
+
+        monkeypatch.setattr(configured_search._index, "update_sessions", always_fail)
+
+        errors: list = []
+        sessions, _new, _upd, _del = configured_search.index_sessions_parallel(
+            lambda: None, on_error=errors.append, batch_size=1
+        )
+
+        # One per-flush error PLUS one terminal IndexFlushError at the end.
+        terminal = [e for e in errors if e.error_type == "IndexFlushError"]
+        assert len(terminal) == 1
+        assert "could not be committed" in terminal[0].message
+
+    def test_get_all_sessions_forwards_adapter_error(
+        self, search_env, configured_search
+    ):
+        """get_all_sessions should also forward adapter errors via on_error."""
+        configured_search.adapters = [_BoomAdapter()] + list(configured_search.adapters)
+        errors: list = []
+        configured_search.get_all_sessions(force_refresh=True, on_error=errors.append)
+        assert any(e.agent == "boom" for e in errors)
