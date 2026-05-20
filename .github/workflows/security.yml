@@ -45,7 +45,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high --file=requirements.txt --package-manager=pip --skip-unresolved
+          args: --severity-threshold=high --file=requirements.txt --package-manager=pip
 
   safety:
     name: Safety CLI vulnerability scan
