@@ -1054,10 +1054,10 @@ class TestOpenCodeCommon:
 
         assert cmd == [
             "opencode",
-            "--",
-            "/home/user/project",
             "--session",
             "ses_abc123",
+            "--",
+            "/home/user/project",
         ]
 
     def test_get_resume_command_uses_end_of_options_separator(self, adapter):
@@ -1078,9 +1078,12 @@ class TestOpenCodeCommon:
         cmd = adapter.get_resume_command(session)
 
         assert cmd[0] == "opencode"
-        assert cmd[1] == "--"
+        assert "--session" in cmd
+        assert "--" in cmd
         assert "--malicious-flag" in cmd
-        # Ensure the malicious value is positional (after `--`), not parsed as a flag.
+        # --session and its value must come BEFORE -- (parsed as a flag);
+        # --malicious-flag must come AFTER -- (treated as positional path).
+        assert cmd.index("--session") < cmd.index("--")
         assert cmd.index("--") < cmd.index("--malicious-flag")
 
     def test_find_sessions_returns_empty_when_unavailable(self, adapter):
