@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/lusky3/fast-resume-plus/compare/v1.0.0...v1.0.1) (2026-05-20)
+
+
+### Bug Fixes
+
+* **tui:** update all fast-resume references to fast-resume-plus ([d965d9b](https://github.com/lusky3/fast-resume-plus/commit/d965d9bcec4ea48549f6f935ad97760d85bd5319))
+
 # 1.0.0 (2026-05-20)
 
 
