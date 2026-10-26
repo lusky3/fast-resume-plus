@@ -28,14 +28,14 @@ env:
 jobs:
   commitlint:
     name: Commit Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version: lts/*
+          node-version: 24
       - run: npm install -D @commitlint/cli @commitlint/config-conventional
       - name: Validate current commit (last commit) with commitlint
         # Also runs on workflow_dispatch so manual releases can't bypass
@@ -50,7 +50,7 @@ jobs:
         run: npx commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -82,7 +82,7 @@ jobs:
           files: junit.xml
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Install uv
@@ -96,7 +96,7 @@ jobs:
         run: uvx ruff@0.14.10 format --check src/ tests/
 
   typecheck:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - name: Install uv
@@ -111,7 +111,7 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [commitlint, test, lint, typecheck]
     # Manual trigger only — runs from main via workflow_dispatch.
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
@@ -142,7 +142,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version: lts/*
+          node-version: 24
           cache: npm
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
