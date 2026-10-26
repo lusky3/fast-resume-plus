@@ -1,3 +1,16 @@
+# [1.1.0](https://github.com/lusky3/fast-resume-plus/compare/v1.0.2...v1.1.0) (2026-05-20)
+
+
+### Bug Fixes
+
+* **kiro:** skip zero-length meta files silently ([43aba83](https://github.com/lusky3/fast-resume-plus/commit/43aba8309ac7a5601759e4701d28bff5d955b5ce))
+* tighten cache permissions, validate chdir, TOCTOU + log file race ([6b0ed4c](https://github.com/lusky3/fast-resume-plus/commit/6b0ed4cc3d867e28dbb914620d90b66ee5da366d))
+
+
+### Features
+
+* **adapters:** add Antigravity CLI (agy) session adapter ([186ab7c](https://github.com/lusky3/fast-resume-plus/commit/186ab7c3097cf618060178ba2da5faff119d02d3))
+
 ## [1.0.2](https://github.com/lusky3/fast-resume-plus/compare/v1.0.1...v1.0.2) (2026-05-20)
 
 

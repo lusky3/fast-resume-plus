@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable
 
 from .adapters import (
+    AntigravityAdapter,
     ClaudeAdapter,
     CodexAdapter,
     CopilotAdapter,
@@ -32,6 +33,7 @@ class SessionSearch:
 
     def __init__(self) -> None:
         self.adapters = [
+            AntigravityAdapter(),
             ClaudeAdapter(),
             CodexAdapter(),
             CopilotAdapter(),

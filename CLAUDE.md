@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`fast-resume-plus` (`fr`) — a TUI for searching and resuming sessions across multiple coding-agent CLIs (Claude Code, Codex, Copilot CLI, Copilot VS Code, Crush, Gemini, Kiro, OpenCode, Vibe). Sessions are normalized via per-agent adapters and indexed in a Tantivy full-text search index.
+`fast-resume-plus` (`fr`) — a TUI for searching and resuming sessions across multiple coding-agent CLIs (Claude Code, Codex, Copilot CLI, Copilot VS Code, Crush, Gemini, Antigravity, Kiro, OpenCode, Vibe). Sessions are normalized via per-agent adapters and indexed in a Tantivy full-text search index.
 
 The package name is `fast-resume-plus` (PyPI) with entry-points `fr`, `fast-resume`, and `fast-resume-plus`. Requires Python `>=3.14`. Managed with `uv`.
 
@@ -43,6 +43,7 @@ Which adapters use which base:
 | Copilot VS Code | Protocol directly | `~/.config/Code/User/globalStorage/emptyWindowChatSessions/` + `workspaceStorage/*/chatSessions/` (JSON, platform path varies) | False |
 | Crush | Protocol directly | `~/.local/share/crush/projects.json` → per-project `crush.db` (SQLite) | False |
 | Gemini | `BaseSessionAdapter` | `~/.gemini/tmp/<slug>/chats/` (`.json` or `.jsonl`; deduped by `_scan_session_files`) | True |
+| Antigravity (agy) | `BaseSessionAdapter` | `~/.gemini/antigravity-cli/conversations/<uuid>.pb` (+ `history.jsonl` for content) | True |
 | Kiro | `BaseSessionAdapter` | `~/.kiro/sessions/cli/` (`<uuid>.json` metadata + `<uuid>.jsonl` events) | True |
 | OpenCode | Protocol directly | `~/.local/share/opencode/opencode.db` (SQLite, 1.2+) or `~/.local/share/opencode/storage/` (legacy JSON) | False |
 | Vibe | `BaseSessionAdapter` | `~/.vibe/logs/session/session_*/` (per-session directories with `meta.json` + `messages.jsonl`) | True |
@@ -54,13 +55,14 @@ Which adapters use which base:
 - Copilot VS Code: `code [<directory>]` (VS Code has no session-resume CLI flag)
 - Crush: `crush` (no session ID arg; `cli.py` chdirs first, Crush shows its own session picker)
 - Gemini: `gemini [--yolo] --resume <id>`
+- Antigravity (`agy`): `agy [--dangerously-skip-permissions] --conversation <id>`
 - Kiro: `kiro-cli chat [--trust-all-tools] --resume-id <id>`
 - OpenCode: `opencode <directory> --session <id>`
 - Vibe: `vibe [--agent auto-approve] --resume <id>`
 
 Crush resume is blocked in the TUI (`action_resume_session` checks `session.agent == "crush"` and shows an error toast) because Crush has no CLI resume flag.
 
-**Yolo auto-detect** — Codex sniffs `turn_context` events and checks whether `approval_policy` is `"never"` or `sandbox_policy.mode` is `"danger-full-access"`. Vibe reads `config.auto_approve` (or legacy `auto_approve`) from `meta.json`. Both set `Session.yolo = True` at parse time. Claude, Copilot CLI, Gemini, and Kiro have no yolo signal in their session files, so the TUI shows a modal when the user presses Enter on those sessions (unless `--yolo` was passed at startup, which skips the modal entirely).
+**Yolo auto-detect** — Codex sniffs `turn_context` events and checks whether `approval_policy` is `"never"` or `sandbox_policy.mode` is `"danger-full-access"`. Vibe reads `config.auto_approve` (or legacy `auto_approve`) from `meta.json`. Both set `Session.yolo = True` at parse time. Claude, Copilot CLI, Gemini, Antigravity, and Kiro have no yolo signal in their session files, so the TUI shows a modal when the user presses Enter on those sessions (unless `--yolo` was passed at startup, which skips the modal entirely).
 
 **Incremental indexing** — `SessionSearch` (in `search.py`) loads `(session_id → (mtime, agent))` pairs from Tantivy, dispatches all adapters concurrently in a `ThreadPoolExecutor`, and streams sessions into the index via the `on_session` callback. `flush_pending()` snapshots the buffer under one lock, then commits under a separate `writer_lock` so adapter threads keep appending while Tantivy flushes. Adapters re-parse only files whose mtime exceeds the stored value by `MTIME_TOLERANCE` (1 ms).
 
@@ -68,9 +70,11 @@ Gemini's `_scan_session_files` deduplicates session IDs when both `.json` and `.
 
 Kiro's `_scan_session_files` uses the newer of the `.json` meta mtime and the `.jsonl` events mtime, so a still-running session triggers re-indexing even if only the event stream grew.
 
+Antigravity (`agy`) is a separate adapter that lives alongside Gemini in `~/.gemini/` but under `antigravity-cli/`. Its conversation blobs (`conversations/<uuid>.pb`) are encrypted at rest (entropy 8.00, no compression magic), so only the UUID filename and mtime are usable from the blob itself. User prompts, the workspace path, and per-message timestamps come from the unencrypted append-only `history.jsonl` sidecar, keyed by `conversationId`; early rows missing that field are skipped. Assistant text is unrecoverable. `_scan_session_files` folds `history.jsonl`'s mtime into each conversation's mtime so an appended prompt triggers re-indexing even when the `.pb` is unchanged, and a per-scan cache parses `history.jsonl` once instead of once per conversation. `get_resume_command` UUID-validates `session.id` (same regex as the codex adapter) before passing it to `agy --conversation` to block argv injection.
+
 OpenCode's incremental path uses `json_extract` to filter rows in SQL rather than loading the full JSON payload into Python, which matters when the database holds thousands of messages.
 
-**Schema versioning** — `config.SCHEMA_VERSION` is written to `~/.cache/fast-resume/tantivy_index/.schema_version`. Any change to the Tantivy schema in `index.py` requires bumping `SCHEMA_VERSION` or users get cryptic deserialization errors on upgrade. The index is auto-wiped and rebuilt on version mismatch. Current version: **21** (added Gemini + Kiro adapters).
+**Schema versioning** — `config.SCHEMA_VERSION` is written to `~/.cache/fast-resume/tantivy_index/.schema_version`. Any change to the Tantivy schema in `index.py` requires bumping `SCHEMA_VERSION` or users get cryptic deserialization errors on upgrade. The index is auto-wiped and rebuilt on version mismatch. Current version: **22** (added Antigravity adapter).
 
 **Resume handoff** — `cli.py` does not subprocess the agent. After `run_tui()` returns a `(resume_cmd, resume_dir)` tuple, it `os.chdir(resume_dir)` then `os.execvp()` to replace the Python process entirely. Before calling `exit()`, the TUI validates the binary is on PATH via `shutil.which` and shows an error toast if not — the TUI has already been torn down by the time `execvp` would raise `FileNotFoundError`.
 
@@ -96,4 +100,4 @@ Typed `agent:` keywords in the search box are bidirectionally synced with the fi
 - `pytest-xdist` runs `-n auto` by default; tests must be isolation-safe. Use `tmp_path` rather than fixed paths, and never touch the user's real `~/.cache/fast-resume/` from tests.
 - TUI tests use Textual's `App.run_test()` pattern; see `tests/test_tui.py` for examples.
 - Each adapter has its own `test_<agent>_adapter.py` — when adding an adapter, mirror the structure (fixtures with sample session files, mtime/incremental cases, resume-command assertions including yolo variants).
-- Current test files: `test_claude_adapter.py`, `test_codex_adapter.py`, `test_copilot_adapter.py`, `test_copilot_vscode_adapter.py`, `test_crush_adapter.py`, `test_gemini_adapter.py`, `test_kiro_adapter.py`, `test_opencode_adapter.py`, `test_vibe_adapter.py`, `test_index.py`, `test_search.py`, `test_query.py`, `test_tui.py`, `test_cli.py`, `test_integration.py`, `test_error_handling.py`.
+- Current test files: `test_antigravity_adapter.py`, `test_claude_adapter.py`, `test_codex_adapter.py`, `test_copilot_adapter.py`, `test_copilot_vscode_adapter.py`, `test_crush_adapter.py`, `test_gemini_adapter.py`, `test_kiro_adapter.py`, `test_opencode_adapter.py`, `test_vibe_adapter.py`, `test_index.py`, `test_search.py`, `test_query.py`, `test_tui.py`, `test_cli.py`, `test_integration.py`, `test_error_handling.py`.

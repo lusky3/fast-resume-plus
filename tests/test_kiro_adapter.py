@@ -217,6 +217,27 @@ class TestKiroAdapter:
         assert session.title == "Stub"
         assert session.content == ""
 
+    def test_empty_meta_file_skipped_silently(self, temp_dir, adapter):
+        """A zero-byte .json file is skipped without invoking on_error.
+
+        Kiro occasionally leaves these behind. Without this short-circuit
+        the JSONDecodeError path fires on every scan, surfacing as a TUI
+        toast even though the situation is benign.
+        """
+        meta_path = temp_dir / "empty.json"
+        meta_path.touch()  # creates a zero-byte file
+        assert meta_path.stat().st_size == 0
+
+        errors: list = []
+
+        def on_error(e):
+            errors.append(e)
+
+        session = adapter._parse_session_file(meta_path, on_error=on_error)
+
+        assert session is None
+        assert errors == []  # crucially, no toast-bound callback fired
+
     def test_parse_session_skips_malformed_jsonl_lines(self, temp_dir, adapter):
         meta_path, events_path = _write_session(
             temp_dir,

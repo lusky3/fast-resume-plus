@@ -42,8 +42,11 @@ def setup_logging() -> None:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     _restrict_permissions(CACHE_DIR, 0o700)
 
-    # Configure parse error logger
-    parse_logger.setLevel(logging.WARNING)
+    # Configure parse error logger. Level is INFO so log_parse_info() can
+    # record benign skips (e.g., empty session files) without bubbling them
+    # up to the TUI as toasts — the toast path goes through on_error, not
+    # this logger.
+    parse_logger.setLevel(logging.INFO)
 
     # Avoid duplicate handlers if called multiple times
     if not parse_logger.handlers:
@@ -71,7 +74,7 @@ def setup_logging() -> None:
 
         # File handler - append mode (file already exists with 0o600)
         handler = logging.FileHandler(LOG_FILE, mode="a", encoding="utf-8")
-        handler.setLevel(logging.WARNING)
+        handler.setLevel(logging.INFO)
 
         # Belt-and-suspenders: if the file existed before this call ran or
         # the pre-create above fell back, ensure the mode is tightened now.
@@ -102,6 +105,22 @@ def log_parse_error(
         message: Human-readable error message
     """
     parse_logger.warning("[%s] %s in %s: %s", agent, error_type, file_path, message)
+
+
+def log_parse_info(agent: str, file_path: str | Path, message: str) -> None:
+    """Log a benign skip to the log file at INFO level.
+
+    Use for cases where parsing was skipped intentionally and no user-
+    visible toast is wanted (e.g., empty/placeholder files left behind
+    by an agent CLI). Callers must NOT also invoke their on_error
+    callback — the toast path is gated on that, not on this log level.
+
+    Args:
+        agent: Which adapter is logging (e.g., "kiro")
+        file_path: Path to the skipped file
+        message: Human-readable reason for the skip
+    """
+    parse_logger.info("[%s] skipped %s: %s", agent, file_path, message)
 
 
 def get_log_file_path() -> Path:
