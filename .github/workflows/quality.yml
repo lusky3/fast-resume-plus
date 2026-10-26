@@ -7,6 +7,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+env:
+  # See workflow.yml: uv would pick Python 3.15, where tantivy fails to build.
+  UV_PYTHON: "3.14"
+
 jobs:
   sonarqube:
     name: SonarQube
