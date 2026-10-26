@@ -556,15 +556,17 @@ wheels = [
 
 [[package]]
 name = "tantivy"
-version = "0.25.1"
+version = "0.27.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/1b/f9/0cd3955d155d3e3ef74b864769514dd191e5dacba9f0beb7af2d914942ce/tantivy-0.25.1.tar.gz", hash = "sha256:68a3314699a7d18fcf338b52bae8ce46a97dde1128a3e47e33fa4db7f71f265e", size = 75120, upload-time = "2025-12-02T11:57:12.997Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/ec/1b256e079d22d92b8f7db14c4d0755ae47c903bf117c07d4ee01c0b27c71/tantivy-0.27.0.tar.gz", hash = "sha256:871d0dc8d3b246d6b8cbf99a2f0ec929eb4e3341ecb3a63e3c7c11c6715cd03d", size = 218844, upload-time = "2026-10-22T01:18:42.749Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/44/9f1d67aa5030f7eebc966c863d1316a510a971dd8bb45651df4acdfae9ed/tantivy-0.25.1-cp314-cp314-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:7f5d29ae85dd0f23df8d15b3e7b341d4f9eb5a446bbb9640df48ac1f6d9e0c6c", size = 7623723, upload-time = "2025-12-02T11:56:55.066Z" },
-    { url = "https://files.pythonhosted.org/packages/db/30/6e085bd3ed9d12da3c91c185854abd70f9dfd35fb36a75ea98428d42c30b/tantivy-0.25.1-cp314-cp314-macosx_10_12_x86_64.whl", hash = "sha256:f2d2938fb69a74fc1bb36edfaf7f0d1596fa1264db0f377bda2195c58bcb6245", size = 3926243, upload-time = "2025-12-02T11:56:57.058Z" },
-    { url = "https://files.pythonhosted.org/packages/32/f5/a00d65433430f51718e5cc6938df571765d7c4e03aedec5aef4ab567aa9b/tantivy-0.25.1-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4f5ff124c4802558e627091e780b362ca944169736caba5a372eef39a79d0ae0", size = 4207186, upload-time = "2025-12-02T11:56:58.803Z" },
-    { url = "https://files.pythonhosted.org/packages/19/63/61bdb12fc95f2a7f77bd419a5149bfa9f28caa76cb569bf2b6b06e1d033e/tantivy-0.25.1-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:43b80ef62a340416139c93d19264e5f808da48e04f9305f1092b8ed22be0a5be", size = 4187312, upload-time = "2025-12-02T11:57:00.595Z" },
-    { url = "https://files.pythonhosted.org/packages/b7/de/e39c0b01d59019bf5c38face8b81defbc4a68cebf5e0c53bcb2cd715a449/tantivy-0.25.1-cp314-cp314-win_amd64.whl", hash = "sha256:286b654f40c70c1e6b64b9bc7031ed0bf5c440f5bffeaeeee21a0ee6cc39f0e2", size = 3436535, upload-time = "2025-12-02T11:57:02.267Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/aa/ba1120e3cf361572d345967a8402210e7379e1364112ee5b4b01ec3c4894/tantivy-0.27.0-cp311-abi3-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:86b660aaa8055a1b4e1bdc2ee88c57b05bc3639f65671cf8aa456208d957bd36", size = 9472904, upload-time = "2026-10-22T01:18:30.924Z" },
+    { url = "https://files.pythonhosted.org/packages/53/a4/3bdae5ded2362fad456bd9e6459b1959f9b724ebe226adca485f956ca04b/tantivy-0.27.0-cp311-abi3-macosx_10_12_x86_64.whl", hash = "sha256:c9618046910f3d22cd3d08c6561379cae025adcfb98f66e11255703a2b82d53f", size = 4881681, upload-time = "2026-10-22T01:18:32.991Z" },
+    { url = "https://files.pythonhosted.org/packages/25/73/68004d1ca5aa7d8965767f1e9eb1e7685f66625525b72c590d931d53f8c6/tantivy-0.27.0-cp311-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7e3ba1f366e05a4ebf176cd549206fa25bdac9ea722637b21fa351582b65440e", size = 5427747, upload-time = "2026-10-22T01:18:34.474Z" },
+    { url = "https://files.pythonhosted.org/packages/70/e2/46f3bc38f47b1286b6d3a53cfc9419a726765978aff2f93784e164a128d6/tantivy-0.27.0-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2d5d5ac2f16038b7ea4cfc10839d20dbec87b5a96076b0984b493e410c1a8415", size = 5208033, upload-time = "2026-10-22T01:18:36.002Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/ca/9d9017cd64e2f17972d041d997a62c06d70ca411589d0f54c9ffcfd8a401/tantivy-0.27.0-cp311-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:16363e6ff420e35719729cc969cc271b26926c38023ebb75330322d14f9524e2", size = 5630748, upload-time = "2026-10-22T01:18:37.865Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/9d/d80e07602a0dbee5e77d1ecb562c229a6cccd2760a4d0f7e7eb8db34026f/tantivy-0.27.0-cp311-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:36dfe98d54163c1ce13d4cc1b54f77a4b7f05f3dfa7fed28133eb946284dd6ea", size = 5784396, upload-time = "2026-10-22T01:18:39.582Z" },
+    { url = "https://files.pythonhosted.org/packages/59/48/a6e01953256815c01af81f8f7bbd17d72d1d1ae265861a0d734e09ae90bf/tantivy-0.27.0-cp311-abi3-win_amd64.whl", hash = "sha256:9af43cb75791ce8c57fb853f0366284a29959a4a4684f82f8480d8582516efad", size = 4292780, upload-time = "2026-10-22T01:18:41.105Z" },
 ]
 
 [[package]]
