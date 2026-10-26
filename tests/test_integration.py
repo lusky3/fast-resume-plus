@@ -329,8 +329,11 @@ class TestEndToEndDataFlow:
                 assert cmd is not None
                 assert len(cmd) > 0
                 # Verify the command is built from the correct session's agent.
-                # (Uses Claude/Vibe fixtures so cmd[0] will be "claude" or "vibe".)
-                assert cmd[0] == first_session.agent  # nosec B101
+                # The TUI now resolves the binary to its absolute path via
+                # shutil.which (returns "/usr/local/bin/mock" in this test) to
+                # avoid a TOCTOU between PATH validation and execvp; the agent
+                # name no longer appears in cmd[0].
+                assert cmd[0] == "/usr/local/bin/mock"  # nosec B101
 
     @pytest.mark.asyncio
     async def test_session_metadata_displayed_correctly(self, integration_app):

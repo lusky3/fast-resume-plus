@@ -7,7 +7,7 @@ on:
 jobs:
   discord:
     name: Discord release notification
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: Post release to Discord
         uses: sarisia/actions-status-discord@eb045afee445dc055c18d3d90bd0f244fd062708 # v1
